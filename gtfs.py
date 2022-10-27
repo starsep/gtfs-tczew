@@ -11,11 +11,10 @@ class GTFS:
 
     @staticmethod
     def agencyInfo() -> str:
-        timezone = "CEST"  # TODO: summer/winter time?
         agencyResult = StringIO()
         agencyResult.write("agency_name,agency_url,agency_timezone,agency_lang\n")
         agencyResult.write(
-            f"Przewozy Autobusowe Gryf sp. z o.o. sp. k.,http://rozklady.tczew.pl/,{timezone},pl"
+            f"Przewozy Autobusowe Gryf sp. z o.o. sp. k.,http://rozklady.tczew.pl/,Europe/Warsaw,pl"
         )
         return agencyResult.getvalue()
 
