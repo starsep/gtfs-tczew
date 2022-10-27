@@ -1,7 +1,7 @@
 import httpx
-from diskcache import Cache
 
-cache = Cache("cache")
+from configuration import cache
+
 DOMAIN = "http://rozklady.tczew.pl"
 
 

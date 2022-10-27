@@ -1,25 +1,28 @@
+import sys
 from dataclasses import dataclass
 from typing import List, Dict
 
 import httpx
 import overpy
-from diskcache import Cache
 
-from configuration import OPENSTREETMAP_DOMAIN, TCZEW_PUBLIC_TRANSPORT_RELATION_ID, OVERPASS_URL
+from configuration import (
+    OPENSTREETMAP_DOMAIN,
+    TCZEW_PUBLIC_TRANSPORT_RELATION_ID,
+    OVERPASS_URL, cache,
+)
+from log import printWarning
 
 OPENSTREETMAP_API = f"{OPENSTREETMAP_DOMAIN}/api/0.6"
 
-cache = Cache("cache")
 
-
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Element:
     type: str
     id: int
     tags: Dict[str, str]
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class RelationMember:
     type: str
     ref: int
@@ -27,18 +30,18 @@ class RelationMember:
     element: Element
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Relation(Element):
     members: List[RelationMember]
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Node(Element):
     lat: float
     lon: float
 
 
-@dataclass
+@dataclass(frozen=True, eq=True)
 class Way(Element):
     nodes: List[Node]
 
@@ -50,6 +53,7 @@ class OSM:
         self.overpassRelations = dict()
         self.overpassWays = dict()
         self.overpassNodes = dict()
+        self.mainRelation = None
 
     def parseElement(self, elementId: int, elementType: str) -> Element:
         if elementType == "relation":
@@ -190,11 +194,44 @@ class OSM:
             ],
         )
 
-    def getMainRelation(self):
+    def fetchMainRelation(self):
         # return self.parseRelation(relationId=TCZEW_PUBLIC_TRANSPORT_RELATION_ID)
         self._saveRelationDataFromOverpass(
             relationId=TCZEW_PUBLIC_TRANSPORT_RELATION_ID
         )
-        return self.parseRelationFromOverpass(
+        self.mainRelation = self.parseRelationFromOverpass(
             relationId=TCZEW_PUBLIC_TRANSPORT_RELATION_ID
         )
+
+    def _getStops(self, element: Element) -> List[Element]:
+        result = list()
+        stopRefs = set()
+        if element.tags.get("highway") == "bus_stop":
+            if "ref" in element.tags:
+                ref = element.tags["ref"]
+                if ref not in stopRefs:
+                    result.append(element)
+                    stopRefs.add(ref)
+            else:
+                printWarning(f"Missing ref for {element}")
+            result.append(element)
+        if type(element) == Relation:
+            for member in element.members:
+                memberStops = self._getStops(member.element)
+                for memberStop in memberStops:
+                    ref = memberStop.tags["ref"]
+                    if ref not in stopRefs:
+                        result.append(memberStop)
+                        stopRefs.add(ref)
+        return result
+
+    def getStops(self) -> Dict[int, Element]:
+        result = dict()
+        for stop in self._getStops(self.mainRelation):
+            ref = stop.tags["ref"]
+            if ";" in ref:
+                for r in ref.split(";"):
+                    result[int(r)] = stop
+            else:
+                result[int(ref)] = stop
+        return result

@@ -1,14 +1,11 @@
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 import geojson
 from geojson import Feature, FeatureCollection, Point
 
 from api import TczewBusesAPI
-
-output = Path("output")
-output.mkdir(exist_ok=True)
+from configuration import outputDir
 
 
 @dataclass
@@ -49,11 +46,11 @@ class TransportData(object):
         super().__init__()
         self.tczewBusesApi = TczewBusesAPI()
 
-    def getBusStops(self, timetableId: int = 0) -> List[BusStop]:
-        stops = []
+    def getBusStops(self, timetableId: int = 0) -> Dict[int, BusStop]:
+        stops = dict()
         for stop in self.tczewBusesApi.getMapBusStops(timetableId=timetableId):
-            stops.append(
-                BusStop(id=stop[0], name=stop[1], latitude=stop[5], longitude=stop[4])
+            stops[stop[0]] = BusStop(
+                id=stop[0], name=stop[1], latitude=stop[5], longitude=stop[4]
             )
         return stops
 
@@ -102,7 +99,7 @@ class TransportData(object):
         return variants
 
     def saveBusStopsGeoJSON(self):
-        stops = self.getBusStops()
+        stops = self.getBusStops().values()
         features = []
         for stop in stops:
             features.append(
@@ -111,5 +108,5 @@ class TransportData(object):
                     properties=dict(ref=stop.id, name=stop.name),
                 )
             )
-        with (output / "stops.geojson").open("w") as f:
+        with (outputDir / "stops.geojson").open("w") as f:
             geojson.dump(FeatureCollection(features=features), f)
