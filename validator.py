@@ -20,6 +20,13 @@ class ValidatedRoute:
     routeName: str
 
 
+@dataclass
+class ValidatedTrip:
+    routeId: str
+    serviceId: str
+    tripId: str
+
+
 class Validator:
     def __init__(self):
         self.transportData = TransportData()
@@ -71,4 +78,13 @@ class Validator:
         return [
             ValidatedRoute(routeId=str(route.id), routeName=route.name)
             for route in self.routesTczew
+        ]
+
+    def validatedTrips(self):
+        # TODO: validate with OSM
+        serviceId = "42" # TODO
+        return [
+            ValidatedTrip(routeId=str(route.id), serviceId=serviceId, tripId=str(variant.id))
+            for route in self.routesTczew
+            for variant in route.variants
         ]

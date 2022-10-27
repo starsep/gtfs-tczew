@@ -29,17 +29,25 @@ class GTFS:
 
     def routes(self) -> str:
         routesResult = StringIO()
-        routesResult.write("route_id,route_short_name,route_type\n")
+        routesResult.write("route_id,route_short_name,route_long_name,route_type\n")
         routeType = 3  # Bus. Used for short- and long-distance bus routes.
         for route in self.validator.validatedRoutes():
-            routesResult.write(f"{route.routeId},{route.routeName},{routeType}\n")
+            routesResult.write(f"{route.routeId},{route.routeName},{route.routeName},{routeType}\n")
         return routesResult.getvalue()
+
+    def trips(self) -> str:
+        tripsResult = StringIO()
+        tripsResult.write("route_id,service_id,trip_id\n")
+        for trip in self.validator.validatedTrips():
+            tripsResult.write(f"{trip.routeId},{trip.serviceId},{trip.tripId}\n")
+        return tripsResult.getvalue()
 
     def generate(self):
         with ZipFile(outputGTFS, "w") as zipOutput:
             zipOutput.writestr("agency.txt", self.agencyInfo())
             zipOutput.writestr("stops.txt", self.stops())
             zipOutput.writestr("routes.txt", self.routes())
+            zipOutput.writestr("trips.txt", self.trips())
 
 
 if __name__ == "__main__":
