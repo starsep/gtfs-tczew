@@ -24,6 +24,8 @@ idna==3.4
     # via
     #   anyio
     #   rfc3986
+overpy==0.6
+    # via -r requirements.in
 rfc3986[idna2008]==1.5.0
     # via httpx
 sniffio==1.3.0
