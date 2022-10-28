@@ -1,10 +1,14 @@
 from dataclasses import dataclass
-from typing import List
+from itertools import zip_longest
+from typing import List, Dict
 
-from log import printWarning, printError
-from osm import OSM, Node
+from rich.table import Table
+
+from configuration import cache
+from log import printWarning, printError, console
+from osm import OSM, Node, Relation
 from pyproj import Geod
-from transportData import TransportData, BusStop, LatLon
+from transportData import TransportData, BusStop, LatLon, RouteVariant
 
 STOP_DISTANCE_WARNING_THRESHOLD = 100.0
 STOP_DISTANCE_ERROR_THRESHOLD = 200.0
@@ -41,6 +45,9 @@ class Validator:
         self.stopsTczew = self.transportData.getBusStops()
         self.stopsOSM = self.osm.getStops()
         self.routesTczew = self.transportData.getRoutes()
+        self.routesOSM = self.osm.getRoutes()
+        self.routeIdToOSMRoute: Dict[str, Relation] = dict()
+        self.validatedStops = None
         self.wgs84Geod = Geod(ellps="WGS84")
 
     @staticmethod
@@ -62,7 +69,9 @@ class Validator:
         elif stopsDistance > STOP_DISTANCE_WARNING_THRESHOLD:
             printWarning(message)
 
-    def validatedStops(self) -> List[ValidatedStop]:
+    def validateStops(self) -> List[ValidatedStop]:
+        if self.validatedStops is not None:
+            return self.validatedStops
         osmIds = set(self.stopsOSM.keys())
         tczewIds = set(self.stopsTczew.keys())
         missingOSMIds = sorted(tczewIds - osmIds)
@@ -94,26 +103,134 @@ class Validator:
                     stopLon=stopOsm.lon if stopOsm is not None else stopTczew.longitude,
                 )
             )
+        self.validatedStops = result
         return result
 
     def validatedRoutes(self) -> List[ValidatedRoute]:
-        # TODO: validate with OSM
+        osmRouteIds = set()
+        gtfsRouteIdTag = "gtfs:route_id"
+        for osmRoute in self.routesOSM:
+            if gtfsRouteIdTag not in osmRoute.tags:
+                printError(f"Missing tag {gtfsRouteIdTag} for relation {osmRoute.id}")
+            else:
+                osmRouteId = osmRoute.tags[gtfsRouteIdTag]
+                self.routeIdToOSMRoute[osmRouteId] = osmRoute
+                osmRouteIds.add(osmRouteId)
+        tczewRoutesIds = {str(route.id) for route in self.routesTczew}
+        if osmRouteIds != tczewRoutesIds:
+            printError(
+                f"Different route ids (OSM vs Tczew):\n{osmRouteIds}\n{tczewRoutesIds}"
+            )
+        for routeId in osmRouteIds & tczewRoutesIds:
+            osmRoute = next(
+                filter(
+                    lambda route: route.tags[gtfsRouteIdTag] == routeId, self.routesOSM
+                )
+            )
+            tczewRoute = next(
+                filter(lambda route: str(route.id) == routeId, self.routesTczew)
+            )
+            osmRef = osmRoute.tags.get("ref")
+            if osmRef != tczewRoute.name:
+                printError(
+                    f"Different ref/name {osmRef}/{tczewRoute.name} for relation {osmRoute.id}"
+                )
         return [
             ValidatedRoute(routeId=str(route.id), routeName=route.name)
             for route in self.routesTczew
         ]
 
-    def validatedTrips(self):
-        # TODO: validate with OSM
-        serviceId = "42"  # TODO
-        return [
-            ValidatedTrip(
-                routeId=str(route.id),
-                serviceId=serviceId,
-                tripId=str(variant.id),
-                shape=variant.geometry,
-                busStopIds=list(map(str, variant.busStopsIds)),
-            )
-            for route in self.routesTczew
-            for variant in route.variants
+    def _validateOSMVariants(self, osmRoute: Relation) -> Dict[str, Relation]:
+        result = dict()
+        gtfsTripIdsTag = "gtfs:trip_id"
+        for member in osmRoute.members:
+            route = member.element
+            if gtfsTripIdsTag not in route.tags:
+                printError(f"Relation {route.id} missing {gtfsTripIdsTag} tag")
+            else:
+                result[route.tags[gtfsTripIdsTag]] = route
+        return result
+
+    def _showTableCompareRoutes(
+        self,
+        osmBusStopIds: List[str],
+        osmBusStopNames: List[str],
+        operatorBusStopNames: List[str],
+        operatorBusStopsIds: List[str],
+        title: str,
+    ):
+        table = Table(title=title)
+
+        table.add_column("ref OSM")
+        table.add_column("name OSM")
+        table.add_column("ref Operator")
+        table.add_column("name Operator")
+
+        for ((refOSM, nameOSM), (refOperator, nameOperator)) in zip_longest(
+            zip(osmBusStopIds, osmBusStopNames),
+            zip(operatorBusStopsIds, operatorBusStopNames),
+            fillvalue=("", ""),
+        ):
+            style = None if refOperator in refOSM else "red"
+            table.add_row(refOSM, nameOSM, refOperator, nameOperator, style=style)
+        console.print(table)
+
+    def _compareListOfBusStopsVariants(
+        self,
+        osmVariant: Relation,
+        variant: RouteVariant,
+        stopIdToValidatedStop: Dict[str, ValidatedStop],
+    ):
+        osmBusStops = [
+            member.element
+            for member in osmVariant.members
+            if member.role.startswith("platform")
         ]
+        operatorBusStopIds = list(map(str, variant.busStopsIds))
+        osmBusStopIds = [busStop.tags["ref"] for busStop in osmBusStops]
+        difference = len(osmBusStopIds) != len(operatorBusStopIds) and any(
+            [
+                operatorBusStopId not in osmBusStopId
+                for (operatorBusStopId, osmBusStopId) in zip(
+                    operatorBusStopIds, osmBusStopIds
+                )
+            ]
+        )
+        if difference:
+            osmBusStopNames = [busStop.tags["name"] for busStop in osmBusStops]
+            tczewBusStopNames = [
+                stopIdToValidatedStop[busStopId].stopName
+                for busStopId in operatorBusStopIds
+            ]
+            self._showTableCompareRoutes(
+                osmBusStopIds,
+                osmBusStopNames,
+                tczewBusStopNames,
+                operatorBusStopIds,
+                title=f"Issues in relation {osmVariant.tags['name']} {osmVariant.id}",
+            )
+
+    def validatedTrips(self):
+        serviceId = "42"  # TODO
+        result = []
+        for route in self.routesTczew:
+            routeId = str(route.id)
+            osmRoute = self.routeIdToOSMRoute[routeId]
+            osmVariants = self._validateOSMVariants(osmRoute)
+            stopIdToValidatedStop = {stop.stopId: stop for stop in self.validateStops()}
+            for variant in route.variants:
+                variantId = str(variant.id)
+                osmVariant = osmVariants[variantId]
+                self._compareListOfBusStopsVariants(
+                    osmVariant, variant, stopIdToValidatedStop
+                )
+                result.append(
+                    ValidatedTrip(
+                        routeId=routeId,
+                        serviceId=serviceId,
+                        tripId=str(variant.id),
+                        shape=variant.geometry,
+                        busStopIds=list(map(str, variant.busStopsIds)),
+                    )
+                )
+        return result

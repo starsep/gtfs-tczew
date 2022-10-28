@@ -24,7 +24,7 @@ class GTFS:
     def stops(self) -> str:
         stopsResult = StringIO()
         stopsResult.write("stop_id,stop_name,stop_lat,stop_lon\n")
-        for stop in self.validator.validatedStops():
+        for stop in self.validator.validateStops():
             stopsResult.write(
                 f"{stop.stopId},{stop.stopName},{stop.stopLat},{stop.stopLon}\n"
             )
@@ -59,13 +59,15 @@ class GTFS:
 
     def showTrips(self):
         stopIdToName = {
-            stop.stopId: stop.stopName for stop in self.validator.validatedStops()
+            stop.stopId: stop.stopName for stop in self.validator.validateStops()
         }
         routeIdToName = {
             route.routeId: route.routeName for route in self.validator.validatedRoutes()
         }
         for trip in self.validator.validatedTrips():
-            table = Table(title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}")
+            table = Table(
+                title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}"
+            )
 
             table.add_column("ref")
             table.add_column("name")
@@ -81,4 +83,4 @@ if __name__ == "__main__":
     gtfs = GTFS()
     gtfs.generate()
     gtfs.generateGeoJSONs()
-    gtfs.showTrips()
+    # gtfs.showTrips()

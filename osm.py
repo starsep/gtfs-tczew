@@ -54,7 +54,7 @@ class OSM:
         self.overpassRelations = dict()
         self.overpassWays = dict()
         self.overpassNodes = dict()
-        self.mainRelation = None
+        self.mainRelation: Relation = None
 
     def parseElement(self, elementId: int, elementType: str) -> Element:
         if elementType == "relation":
@@ -236,3 +236,10 @@ class OSM:
             else:
                 result[int(ref)] = stop
         return result
+
+    def getRoutes(self) -> List[Relation]:
+        return [
+            member.element
+            for member in self.mainRelation.members
+            if member.element.tags.get("route_master") == "bus"
+        ]
