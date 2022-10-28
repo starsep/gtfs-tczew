@@ -49,6 +49,8 @@ click-plugins==1.1.1
     # via fiona
 cligj==0.7.2
     # via fiona
+commonmark==0.9.1
+    # via rich
 debugpy==1.6.3
     # via ipykernel
 decorator==5.1.1
@@ -240,6 +242,7 @@ pygments==2.13.0
     #   jupyter-console
     #   nbconvert
     #   qtconsole
+    #   rich
 pyparsing==3.0.9
     # via packaging
 pyproj==3.4.0
@@ -270,6 +273,8 @@ requests==2.28.1
     #   gtfs-kit
 rfc3986[idna2008]==1.5.0
     # via httpx
+rich==12.6.0
+    # via -r requirements.in
 rtree==1.0.1
     # via gtfs-kit
 send2trash==1.8.0

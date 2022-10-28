@@ -8,7 +8,8 @@ import overpy
 from configuration import (
     OPENSTREETMAP_DOMAIN,
     TCZEW_PUBLIC_TRANSPORT_RELATION_ID,
-    OVERPASS_URL, cache,
+    OVERPASS_URL,
+    cache,
 )
 from log import printWarning
 
@@ -225,7 +226,7 @@ class OSM:
                         stopRefs.add(ref)
         return result
 
-    def getStops(self) -> Dict[int, Element]:
+    def getStops(self) -> Dict[int, Node]:
         result = dict()
         for stop in self._getStops(self.mainRelation):
             ref = stop.tags["ref"]

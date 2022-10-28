@@ -1,5 +1,11 @@
-import sys
+from rich.console import Console
+
+console = Console(stderr=True)
 
 
 def printWarning(message: str):
-    print(f"\033[93m{message}\033[0m", file=sys.stderr)
+    console.print(message, style="yellow")
+
+
+def printError(message: str):
+    console.print(message, style="red")

@@ -1,7 +1,10 @@
 from io import StringIO
 from zipfile import ZipFile
 
+from rich.table import Table
+
 from configuration import outputDir, outputGTFS
+from log import console
 from validator import Validator
 
 
@@ -32,7 +35,9 @@ class GTFS:
         routesResult.write("route_id,route_short_name,route_long_name,route_type\n")
         routeType = 3  # Bus. Used for short- and long-distance bus routes.
         for route in self.validator.validatedRoutes():
-            routesResult.write(f"{route.routeId},{route.routeName},{route.routeName},{routeType}\n")
+            routesResult.write(
+                f"{route.routeId},{route.routeName},{route.routeName},{routeType}\n"
+            )
         return routesResult.getvalue()
 
     def trips(self) -> str:
@@ -49,6 +54,31 @@ class GTFS:
             zipOutput.writestr("routes.txt", self.routes())
             zipOutput.writestr("trips.txt", self.trips())
 
+    def generateGeoJSONs(self):
+        self.validator.transportData.saveBusRoutesVariantsGeoJSON()
+
+    def showTrips(self):
+        stopIdToName = {
+            stop.stopId: stop.stopName for stop in self.validator.validatedStops()
+        }
+        routeIdToName = {
+            route.routeId: route.routeName for route in self.validator.validatedRoutes()
+        }
+        for trip in self.validator.validatedTrips():
+            table = Table(title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}")
+
+            table.add_column("ref")
+            table.add_column("name")
+
+            for stopId in trip.busStopIds:
+                table.add_row(stopId, stopIdToName[stopId])
+
+            console.print(" or ".join([f"ref={ref}" for ref in trip.busStopIds]))
+            console.print(table)
+
 
 if __name__ == "__main__":
-    GTFS().generate()
+    gtfs = GTFS()
+    gtfs.generate()
+    gtfs.generateGeoJSONs()
+    gtfs.showTrips()
