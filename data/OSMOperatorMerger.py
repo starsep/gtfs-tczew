@@ -11,7 +11,10 @@ from data.GTFSConverter import (
     GTFSTrip,
     RouteId,
     TripId,
-    StopId, GTFSShape, shapesFromTrips,
+    StopId,
+    GTFSShape,
+    shapesFromTrips,
+    GTFSService,
 )
 from data.OSMConverter import OSMConverter
 from log import printWarning, printError, console
@@ -174,7 +177,7 @@ class OSMOperatorMerger(GTFSConverter):
             )
 
     def trips(self) -> Dict[TripId, GTFSTrip]:
-        serviceId = "42"  # TODO
+        serviceId = "0"  # TODO
         result = dict()
         stops = self.stops()
         for tripId, operatorTrip in self.tripsOperator.items():
@@ -192,6 +195,9 @@ class OSMOperatorMerger(GTFSConverter):
 
     def shapes(self) -> List[GTFSShape]:
         return shapesFromTrips(self.trips())
+
+    def services(self) -> List[GTFSService]:
+        return self.operatorConverter.services()
 
     # def _compareTrips(
     #     self,

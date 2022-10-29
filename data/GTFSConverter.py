@@ -10,6 +10,8 @@ StopId = str
 RouteId = str
 TripId = str
 ShapeId = str
+ServiceId = str
+GTFSDate = str  # YYYYMMDD
 
 
 @dataclass
@@ -32,7 +34,7 @@ class GTFSRoute:
 @dataclass
 class GTFSTrip:
     routeId: RouteId
-    serviceId: str
+    serviceId: ServiceId
     tripId: TripId
     shape: List[LatLon]
     busStopIds: List[StopId]
@@ -56,6 +58,20 @@ class GTFSData:
     routes: List[GTFSRoute]
 
 
+@dataclass
+class GTFSService:
+    serviceId: ServiceId
+    monday: bool
+    tuesday: bool
+    wednesday: bool
+    thursday: bool
+    friday: bool
+    saturday: bool
+    sunday: bool
+    startDate: GTFSDate
+    endDate: GTFSDate
+
+
 class GTFSConverter(ABC):
     @abstractmethod
     def stops(self) -> Dict[StopId, GTFSStop]:
@@ -71,6 +87,10 @@ class GTFSConverter(ABC):
 
     @abstractmethod
     def shapes(self) -> List[GTFSShape]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def services(self) -> List[GTFSService]:
         raise NotImplementedError
 
 

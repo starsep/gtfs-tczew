@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Dict
 
 from data.GTFSConverter import (
@@ -7,7 +8,10 @@ from data.GTFSConverter import (
     StopId,
     RouteId,
     GTFSTrip,
-    TripId, GTFSShape, shapesFromTrips,
+    TripId,
+    GTFSShape,
+    shapesFromTrips,
+    GTFSService,
 )
 from data.TczewTransportData import TczewTransportData
 
@@ -35,7 +39,7 @@ class TczewGTFSConverter(GTFSConverter):
         }
 
     def trips(self) -> Dict[TripId, GTFSTrip]:
-        serviceId = "42"  # TODO
+        serviceId = "0"  # TODO
         return {
             str(variant.id): GTFSTrip(
                 routeId=str(route.id),
@@ -51,3 +55,22 @@ class TczewGTFSConverter(GTFSConverter):
 
     def shapes(self) -> List[GTFSShape]:
         return shapesFromTrips(self.trips())
+
+    def services(self) -> List[GTFSService]:
+        return [
+            GTFSService(
+                serviceId=str(index),
+                monday=True,
+                tuesday=True,
+                wednesday=True,
+                thursday=True,
+                friday=True,
+                saturday=True,
+                sunday=True,
+                startDate=datetime.now().date().strftime("%Y%m%d"),
+                endDate="20300101",
+            )
+            for index, timetable in enumerate(
+                self.tczewTransportData.getTimetableInformation()
+            )
+        ]

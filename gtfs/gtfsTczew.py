@@ -79,5 +79,30 @@ class GTFSTczew(GTFSGenerator):
         shapesResult = StringIO()
         shapesResult.write("shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n")
         for shape in self.gtfsConverter.shapes():
-            shapesResult.write(f"{shape.shapeId},{shape.shapeLat},{shape.shapeLon},{shape.shapeSequence}\n")
+            shapesResult.write(
+                f"{shape.shapeId},{shape.shapeLat},{shape.shapeLon},{shape.shapeSequence}\n"
+            )
         return shapesResult.getvalue()
+
+    def calendarString(self) -> str:
+        calendarResult = StringIO()
+        calendarResult.write(
+            "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
+        )
+        for service in self.gtfsConverter.services():
+            daysBinary = ",".join(
+                str(int(day))
+                for day in [
+                    service.monday,
+                    service.tuesday,
+                    service.wednesday,
+                    service.thursday,
+                    service.friday,
+                    service.saturday,
+                    service.sunday,
+                ]
+            )
+            calendarResult.write(
+                f"{service.serviceId},{daysBinary},{service.startDate},{service.endDate}\n"
+            )
+        return calendarResult.getvalue()
