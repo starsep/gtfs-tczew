@@ -2,18 +2,20 @@ from io import StringIO
 
 from rich.table import Table
 
+from data.OSMConverter import OSMConverter
+from data.OSMOperatorMerger import OSMOperatorMerger
 from data.OSMOverpass import OSMOverpass
+from data.TczewGTFSConverter import TczewGTFSConverter
 from data.TczewTransportData import TczewTransportData
 from gtfs.gtfsGenerator import GTFSGenerator
 from log import console
-from data.OSMOperatorMerger import Validator, OSMOperatorMerger
 
 
 class GTFSTczew(GTFSGenerator):
     def __init__(self):
-        self.validator = OSMOperatorMerger(
-            osmSource=OSMOverpass(mainRelationId=12625881),
-            transportData=TczewTransportData(),
+        self.gtfsConverter = OSMOperatorMerger(
+            osmConverter=OSMConverter(OSMOverpass(mainRelationId=12625881)),
+            operatorConverter=TczewGTFSConverter(TczewTransportData()),
         )
 
     def agencyInfo(self) -> str:
@@ -24,40 +26,41 @@ class GTFSTczew(GTFSGenerator):
         )
         return agencyResult.getvalue()
 
-    def stops(self) -> str:
+    def stopsString(self) -> str:
         stopsResult = StringIO()
         stopsResult.write("stop_id,stop_name,stop_lat,stop_lon\n")
-        for stop in self.validator.validateStops():
+        for stop in self.gtfsConverter.stops().values():
             stopsResult.write(
                 f"{stop.stopId},{stop.stopName},{stop.stopLat},{stop.stopLon}\n"
             )
         return stopsResult.getvalue()
 
-    def routes(self) -> str:
+    def routesString(self) -> str:
         routesResult = StringIO()
         routesResult.write("route_id,route_short_name,route_long_name,route_type\n")
         routeType = 3  # Bus. Used for short- and long-distance bus routes.
-        for route in self.validator.validatedRoutes():
+        for route in self.gtfsConverter.routes().values():
             routesResult.write(
                 f"{route.routeId},{route.routeName},{route.routeName},{routeType}\n"
             )
         return routesResult.getvalue()
 
-    def trips(self) -> str:
+    def tripsString(self) -> str:
         tripsResult = StringIO()
         tripsResult.write("route_id,service_id,trip_id\n")
-        for trip in self.validator.validatedTrips():
+        for trip in self.gtfsConverter.trips().values():
             tripsResult.write(f"{trip.routeId},{trip.serviceId},{trip.tripId}\n")
         return tripsResult.getvalue()
 
     def showTrips(self):
         stopIdToName = {
-            stop.stopId: stop.stopName for stop in self.validator.validateStops()
+            stop.stopId: stop.stopName for stop in self.gtfsConverter.stops().values()
         }
         routeIdToName = {
-            route.routeId: route.routeName for route in self.validator.validatedRoutes()
+            route.routeId: route.routeName
+            for route in self.gtfsConverter.routes().values()
         }
-        for trip in self.validator.validatedTrips():
+        for trip in self.gtfsConverter.trips().values():
             print(routeIdToName)
             table = Table(
                 title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}"

@@ -10,20 +10,20 @@ class GTFSGenerator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def stops(self) -> str:
+    def stopsString(self) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def routes(self) -> str:
+    def routesString(self) -> str:
         raise NotImplementedError
 
     @abstractmethod
-    def trips(self) -> str:
+    def tripsString(self) -> str:
         raise NotImplementedError
 
     def generate(self):
         with ZipFile(outputGTFS, "w") as zipOutput:
             zipOutput.writestr("agency.txt", self.agencyInfo())
-            zipOutput.writestr("stops.txt", self.stops())
-            zipOutput.writestr("routes.txt", self.routes())
-            zipOutput.writestr("trips.txt", self.trips())
+            zipOutput.writestr("stops.txt", self.stopsString())
+            zipOutput.writestr("routes.txt", self.routesString())
+            zipOutput.writestr("trips.txt", self.tripsString())

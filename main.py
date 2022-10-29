@@ -4,5 +4,5 @@ from gtfs.gtfsTczew import GTFSTczew
 if __name__ == "__main__":
     gtfs = GTFSTczew()
     gtfs.generate()
-    GeoJSONSaver().save(gtfs.validator.transportData)
+    GeoJSONSaver().save(gtfs.gtfsConverter)
     # gtfs.showTrips()

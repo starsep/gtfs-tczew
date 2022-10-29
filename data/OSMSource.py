@@ -96,13 +96,9 @@ class OSMSource(ABC):
                         stopRefs.add(ref)
         return result
 
-    def getStops(self) -> Dict[int, Node]:
+    def getStops(self) -> Dict[str, Node]:
         result = dict()
         for stop in self._getStops(self.mainRelation):
             ref = stop.tags["ref"]
-            if ";" in ref:
-                for r in ref.split(";"):
-                    result[int(r)] = stop
-            else:
-                result[int(ref)] = stop
+            result[ref] = stop
         return result

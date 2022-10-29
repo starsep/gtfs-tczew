@@ -2,16 +2,11 @@ from abc import abstractmethod, ABC
 from dataclasses import dataclass
 from typing import List, Dict
 
-from geojson import Point
-
 
 @dataclass(eq=True)
 class LatLon:
     latitude: float
     longitude: float
-
-    def toPoint(self):
-        return Point((self.longitude, self.latitude))
 
 
 @dataclass
