@@ -7,7 +7,7 @@ from data.GTFSConverter import (
     StopId,
     RouteId,
     GTFSTrip,
-    TripId,
+    TripId, GTFSShape, shapesFromTrips,
 )
 from data.TczewTransportData import TczewTransportData
 
@@ -41,9 +41,13 @@ class TczewGTFSConverter(GTFSConverter):
                 routeId=str(route.id),
                 serviceId=serviceId,
                 tripId=str(variant.id),
+                shapeId=str(variant.id),
                 shape=variant.geometry,
                 busStopIds=list(map(str, variant.busStopsIds)),
             )
             for route in self.tczewRoutes
             for variant in route.variants
         }
+
+    def shapes(self) -> List[GTFSShape]:
+        return shapesFromTrips(self.trips())

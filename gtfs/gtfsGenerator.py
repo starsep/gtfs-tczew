@@ -21,9 +21,14 @@ class GTFSGenerator(ABC):
     def tripsString(self) -> str:
         raise NotImplementedError
 
+    @abstractmethod
+    def shapesString(self) -> str:
+        raise NotImplementedError
+
     def generate(self):
         with ZipFile(outputGTFS, "w") as zipOutput:
             zipOutput.writestr("agency.txt", self.agencyInfo())
             zipOutput.writestr("stops.txt", self.stopsString())
             zipOutput.writestr("routes.txt", self.routesString())
             zipOutput.writestr("trips.txt", self.tripsString())
+            zipOutput.writestr("shapes.txt", self.shapesString())

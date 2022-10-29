@@ -8,7 +8,7 @@ from data.GTFSConverter import (
     GTFSTrip,
     RouteId,
     StopId,
-    TripId,
+    TripId, GTFSShape, shapesFromTrips,
 )
 from data.OSMSource import Relation, OSMSource, Way, Node
 from data.TransportData import LatLon
@@ -116,7 +116,13 @@ class OSMConverter(GTFSConverter):
                     routeId=route.tags[GTFS_ROUTE_ID_TAG],
                     serviceId=serviceId,
                     tripId=gtfsTripId,
+                    shapeId=gtfsTripId,
                     shape=self._extractRouteGeometry(route),
                     busStopIds=self._extractBusStopIds(route),
                 )
         return result
+
+    def shapes(self) -> List[GTFSShape]:
+        return shapesFromTrips(self.trips())
+
+

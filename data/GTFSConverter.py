@@ -9,6 +9,7 @@ from data.TransportData import LatLon
 StopId = str
 RouteId = str
 TripId = str
+ShapeId = str
 
 
 @dataclass
@@ -35,9 +36,18 @@ class GTFSTrip:
     tripId: TripId
     shape: List[LatLon]
     busStopIds: List[StopId]
+    shapeId: ShapeId
 
     def busStopNames(self, stops: Dict[StopId, GTFSStop]):
         return [stops[busStopId].stopName for busStopId in self.busStopIds]
+
+
+@dataclass
+class GTFSShape:
+    shapeId: ShapeId
+    shapeLat: float
+    shapeLon: float
+    shapeSequence: int
 
 
 @dataclass
@@ -58,3 +68,20 @@ class GTFSConverter(ABC):
     @abstractmethod
     def trips(self) -> Dict[TripId, GTFSTrip]:
         raise NotImplementedError
+
+    @abstractmethod
+    def shapes(self) -> List[GTFSShape]:
+        raise NotImplementedError
+
+
+def shapesFromTrips(trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
+    return [
+        GTFSShape(
+            shapeId=trip.shapeId,
+            shapeLat=point.latitude,
+            shapeLon=point.longitude,
+            shapeSequence=pointIndex,
+        )
+        for trip in trips.values()
+        for pointIndex, point in enumerate(trip.shape)
+    ]

@@ -74,3 +74,10 @@ class GTFSTczew(GTFSGenerator):
 
             console.print(" or ".join([f"ref={ref}" for ref in trip.busStopIds]))
             console.print(table)
+
+    def shapesString(self) -> str:
+        shapesResult = StringIO()
+        shapesResult.write("shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n")
+        for shape in self.gtfsConverter.shapes():
+            shapesResult.write(f"{shape.shapeId},{shape.shapeLat},{shape.shapeLon},{shape.shapeSequence}\n")
+        return shapesResult.getvalue()
