@@ -4,9 +4,10 @@ from typing import List, Dict
 
 from rich.table import Table
 
-from configuration import cache
+from configuration import TCZEW_PUBLIC_TRANSPORT_RELATION_ID
 from log import printWarning, printError, console
-from osm import OSM, Node, Relation
+from source.osmOverpass import OSMOverpass
+from source.osmSource import Node, Relation
 from pyproj import Geod
 from transportData import TransportData, BusStop, LatLon, RouteVariant
 
@@ -40,12 +41,12 @@ class ValidatedTrip:
 class Validator:
     def __init__(self):
         self.transportData = TransportData()
-        self.osm = OSM()
-        self.osm.fetchMainRelation()
+        self.osmSource = OSMOverpass()
+        self.osmSource.savePublicTransportRelation(TCZEW_PUBLIC_TRANSPORT_RELATION_ID)
         self.stopsTczew = self.transportData.getBusStops()
-        self.stopsOSM = self.osm.getStops()
+        self.stopsOSM = self.osmSource.getStops()
         self.routesTczew = self.transportData.getRoutes()
-        self.routesOSM = self.osm.getRoutes()
+        self.routesOSM = self.osmSource.getRoutes()
         self.routeIdToOSMRoute: Dict[str, Relation] = dict()
         self.validatedStops = None
         self.wgs84Geod = Geod(ellps="WGS84")
