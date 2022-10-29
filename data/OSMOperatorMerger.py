@@ -4,6 +4,7 @@ from typing import List, Dict
 from pyproj import Geod
 from rich.table import Table
 
+from configuration import cache
 from data.GTFSConverter import (
     GTFSConverter,
     GTFSStop,
@@ -15,6 +16,7 @@ from data.GTFSConverter import (
     GTFSShape,
     shapesFromTrips,
     GTFSService,
+    GTFSData,
 )
 from data.OSMConverter import OSMConverter
 from log import printWarning, printError, console
@@ -26,16 +28,17 @@ STOP_DISTANCE_ERROR_THRESHOLD = 200.0
 class OSMOperatorMerger(GTFSConverter):
     def __init__(
         self,
-        osmConverter: OSMConverter,
-        operatorConverter: GTFSConverter,
+        osmData: GTFSData,
+        operatorData: GTFSData,
     ):
-        self.operatorConverter = operatorConverter
-        self.stopsOperator = operatorConverter.stops()
-        self.stopsOSM = osmConverter.stops()
-        self.routesOperator = operatorConverter.routes()
-        self.routesOSM = osmConverter.routes()
-        self.tripsOperator = operatorConverter.trips()
-        self.tripsOSM = osmConverter.trips()
+        self.operatorData = operatorData
+        self.osmData = osmData
+        self.stopsOperator = self.operatorData.stops
+        self.stopsOSM = self.osmData.stops
+        self.routesOperator = self.operatorData.routes
+        self.routesOSM = self.osmData.routes
+        self.tripsOperator = self.operatorData.trips
+        self.tripsOSM = self.osmData.trips
         self.wgs84Geod = Geod(ellps="WGS84")
 
     @staticmethod
@@ -176,10 +179,8 @@ class OSMOperatorMerger(GTFSConverter):
                 title=f"Issues in trip {osmTrip.tripId} route {osmTrip.routeId}",
             )
 
-    def trips(self) -> Dict[TripId, GTFSTrip]:
-        serviceId = "0"  # TODO
+    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
         result = dict()
-        stops = self.stops()
         for tripId, operatorTrip in self.tripsOperator.items():
             osmTrip = self.tripsOSM.get(tripId)
             if osmTrip is None:
@@ -193,11 +194,11 @@ class OSMOperatorMerger(GTFSConverter):
             result[tripId] = osmTrip
         return result
 
-    def shapes(self) -> List[GTFSShape]:
-        return shapesFromTrips(self.trips())
+    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
+        return shapesFromTrips(trips)
 
     def services(self) -> List[GTFSService]:
-        return self.operatorConverter.services()
+        return self.operatorData.services
 
     # def _compareTrips(
     #     self,

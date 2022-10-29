@@ -2,7 +2,6 @@ from typing import Dict, List, cast
 
 from data.GTFSConverter import (
     GTFSConverter,
-    GTFSData,
     GTFSStop,
     GTFSRoute,
     GTFSTrip,
@@ -22,9 +21,6 @@ GTFS_ROUTE_ID_TAG = "gtfs:route_id"
 
 
 class OSMConverter(GTFSConverter):
-    def data(self) -> GTFSData:
-        pass
-
     def __init__(self, osmSource: OSMSource):
         self.osmSource = osmSource
         self.osmSource.savePublicTransportRelation()
@@ -110,7 +106,7 @@ class OSMConverter(GTFSConverter):
             result.append(stop.tags["ref"])
         return result
 
-    def trips(self) -> Dict[TripId, GTFSTrip]:
+    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
         serviceId = "0"  # TODO
         result = dict()
         for osmRoute in self.routesOSM:
@@ -125,8 +121,8 @@ class OSMConverter(GTFSConverter):
                 )
         return result
 
-    def shapes(self) -> List[GTFSShape]:
-        return shapesFromTrips(self.trips())
+    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
+        return shapesFromTrips(trips)
 
     def services(self) -> List[GTFSService]:
-        raise NotImplementedError
+        return []

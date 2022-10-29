@@ -38,7 +38,7 @@ class TczewGTFSConverter(GTFSConverter):
             for route in self.tczewRoutes
         }
 
-    def trips(self) -> Dict[TripId, GTFSTrip]:
+    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
         serviceId = "0"  # TODO
         return {
             str(variant.id): GTFSTrip(
@@ -53,8 +53,8 @@ class TczewGTFSConverter(GTFSConverter):
             for variant in route.variants
         }
 
-    def shapes(self) -> List[GTFSShape]:
-        return shapesFromTrips(self.trips())
+    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
+        return shapesFromTrips(trips)
 
     def services(self) -> List[GTFSService]:
         return [

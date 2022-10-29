@@ -2,14 +2,14 @@ import geojson
 from geojson import FeatureCollection, Feature, LineString
 
 from configuration import outputDir
-from data.OSMOperatorMerger import OSMOperatorMerger
+from data.GTFSConverter import GTFSData
 
 
 class GeoJSONSaver:
     @staticmethod
-    def _saveBusStopsGeoJSON(osmOperatorMerger: OSMOperatorMerger):
+    def _saveBusStopsGeoJSON(operatorGTFSData: GTFSData):
         features = []
-        for stop in osmOperatorMerger.stopsOperator.values():
+        for stop in operatorGTFSData.stops.values():
             features.append(
                 Feature(
                     geometry=stop.toPoint(),
@@ -20,11 +20,11 @@ class GeoJSONSaver:
             geojson.dump(FeatureCollection(features=features), f)
 
     @staticmethod
-    def _saveBusRoutesVariantsGeoJSON(osmOperatorMerger: OSMOperatorMerger):
+    def _saveBusRoutesVariantsGeoJSON(operatorGTFSData: GTFSData):
         features = []
-        for trip in osmOperatorMerger.tripsOperator.values():
+        for trip in operatorGTFSData.trips.values():
             points = [(point.latitude, point.longitude) for point in trip.shape]
-            stopNames = trip.busStopNames(osmOperatorMerger.stopsOperator)[-1]
+            stopNames = trip.busStopNames(operatorGTFSData.stops)[-1]
             properties = dict(
                 name=f"Bus {trip.routeId}",
                 variantId=trip.tripId,
@@ -40,6 +40,6 @@ class GeoJSONSaver:
         with (outputDir / f"routes.geojson").open("w") as f:
             geojson.dump(FeatureCollection(features=features), f)
 
-    def save(self, osmOperatorMerger: OSMOperatorMerger):
-        self._saveBusStopsGeoJSON(osmOperatorMerger)
-        self._saveBusRoutesVariantsGeoJSON(osmOperatorMerger)
+    def save(self, operatorGTFSData: GTFSData):
+        self._saveBusStopsGeoJSON(operatorGTFSData)
+        self._saveBusRoutesVariantsGeoJSON(operatorGTFSData)

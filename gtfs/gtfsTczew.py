@@ -13,10 +13,11 @@ from log import console
 
 class GTFSTczew(GTFSGenerator):
     def __init__(self):
-        self.gtfsConverter = OSMOperatorMerger(
-            osmConverter=OSMConverter(OSMOverpass(mainRelationId=12625881)),
-            operatorConverter=TczewGTFSConverter(TczewTransportData()),
-        )
+        self.osmData = OSMConverter(OSMOverpass(mainRelationId=12625881)).data()
+        self.operatorData = TczewGTFSConverter(TczewTransportData()).data()
+        self.gtfsData = OSMOperatorMerger(
+            osmData=self.osmData, operatorData=self.operatorData
+        ).data()
 
     def agencyInfo(self) -> str:
         agencyResult = StringIO()
@@ -29,7 +30,7 @@ class GTFSTczew(GTFSGenerator):
     def stopsString(self) -> str:
         stopsResult = StringIO()
         stopsResult.write("stop_id,stop_name,stop_lat,stop_lon\n")
-        for stop in self.gtfsConverter.stops().values():
+        for stop in self.gtfsData.stops.values():
             stopsResult.write(
                 f"{stop.stopId},{stop.stopName},{stop.stopLat},{stop.stopLon}\n"
             )
@@ -39,7 +40,7 @@ class GTFSTczew(GTFSGenerator):
         routesResult = StringIO()
         routesResult.write("route_id,route_short_name,route_long_name,route_type\n")
         routeType = 3  # Bus. Used for short- and long-distance bus routes.
-        for route in self.gtfsConverter.routes().values():
+        for route in self.gtfsData.routes.values():
             routesResult.write(
                 f"{route.routeId},{route.routeName},{route.routeName},{routeType}\n"
             )
@@ -48,19 +49,18 @@ class GTFSTczew(GTFSGenerator):
     def tripsString(self) -> str:
         tripsResult = StringIO()
         tripsResult.write("route_id,service_id,trip_id\n")
-        for trip in self.gtfsConverter.trips().values():
+        for trip in self.gtfsData.trips.values():
             tripsResult.write(f"{trip.routeId},{trip.serviceId},{trip.tripId}\n")
         return tripsResult.getvalue()
 
     def showTrips(self):
         stopIdToName = {
-            stop.stopId: stop.stopName for stop in self.gtfsConverter.stops().values()
+            stop.stopId: stop.stopName for stop in self.gtfsData.stops.values()
         }
         routeIdToName = {
-            route.routeId: route.routeName
-            for route in self.gtfsConverter.routes().values()
+            route.routeId: route.routeName for route in self.gtfsData.routes.values()
         }
-        for trip in self.gtfsConverter.trips().values():
+        for trip in self.gtfsData.trips.values():
             print(routeIdToName)
             table = Table(
                 title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}"
@@ -78,7 +78,7 @@ class GTFSTczew(GTFSGenerator):
     def shapesString(self) -> str:
         shapesResult = StringIO()
         shapesResult.write("shape_id,shape_pt_lat,shape_pt_lon,shape_pt_sequence\n")
-        for shape in self.gtfsConverter.shapes():
+        for shape in self.gtfsData.shapes:
             shapesResult.write(
                 f"{shape.shapeId},{shape.shapeLat},{shape.shapeLon},{shape.shapeSequence}\n"
             )
@@ -89,7 +89,7 @@ class GTFSTczew(GTFSGenerator):
         calendarResult.write(
             "service_id,monday,tuesday,wednesday,thursday,friday,saturday,sunday,start_date,end_date\n"
         )
-        for service in self.gtfsConverter.services():
+        for service in self.gtfsData.services:
             daysBinary = ",".join(
                 str(int(day))
                 for day in [

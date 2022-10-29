@@ -53,12 +53,6 @@ class GTFSShape:
 
 
 @dataclass
-class GTFSData:
-    stops: List[GTFSStop]
-    routes: List[GTFSRoute]
-
-
-@dataclass
 class GTFSService:
     serviceId: ServiceId
     monday: bool
@@ -72,6 +66,15 @@ class GTFSService:
     endDate: GTFSDate
 
 
+@dataclass
+class GTFSData:
+    stops: Dict[StopId, GTFSStop]
+    routes: Dict[RouteId, GTFSRoute]
+    trips: Dict[TripId, GTFSTrip]
+    shapes: List[GTFSShape]
+    services: List[GTFSService]
+
+
 class GTFSConverter(ABC):
     @abstractmethod
     def stops(self) -> Dict[StopId, GTFSStop]:
@@ -82,16 +85,29 @@ class GTFSConverter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def trips(self) -> Dict[TripId, GTFSTrip]:
+    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
         raise NotImplementedError
 
     @abstractmethod
-    def shapes(self) -> List[GTFSShape]:
+    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
         raise NotImplementedError
 
     @abstractmethod
     def services(self) -> List[GTFSService]:
         raise NotImplementedError
+
+    def data(self) -> GTFSData:
+        stops = self.stops()
+        routes = self.routes()
+        trips = self.trips(stops=stops)
+        shapes = self.shapes(trips=trips)
+        return GTFSData(
+            stops=stops,
+            routes=routes,
+            trips=trips,
+            shapes=shapes,
+            services=self.services(),
+        )
 
 
 def shapesFromTrips(trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
