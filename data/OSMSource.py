@@ -2,10 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import List, Dict
 
-from configuration import OPENSTREETMAP_DOMAIN
 from log import printWarning
-
-OPENSTREETMAP_API = f"{OPENSTREETMAP_DOMAIN}/api/0.6"
 
 
 @dataclass(frozen=True, eq=True)
@@ -42,6 +39,9 @@ class Way(Element):
 class OSMSource(ABC):
     mainRelation: Relation
 
+    def __init__(self, mainRelationId: int) -> None:
+        self.mainRelationId = mainRelationId
+
     @abstractmethod
     def fetchRelation(self, relationId: int) -> Relation:
         raise NotImplementedError
@@ -64,8 +64,8 @@ class OSMSource(ABC):
         else:
             raise NotImplementedError(f"unknown element type: {elementType}")
 
-    def savePublicTransportRelation(self, relationId: int):
-        self.mainRelation = self.fetchRelation(relationId)
+    def savePublicTransportRelation(self):
+        self.mainRelation = self.fetchRelation(self.mainRelationId)
 
     def getRoutes(self) -> List[Relation]:
         return [

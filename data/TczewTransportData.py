@@ -1,7 +1,14 @@
 from typing import List, Dict
 
-from data.tczewApi import TczewBusesAPI
-from data.transportData import TransportData, BusStop, Route, RouteVariant, Timetable, LatLon
+from data.TczewApi import TczewBusesAPI
+from data.TransportData import (
+    TransportData,
+    BusStop,
+    Route,
+    RouteVariant,
+    Timetable,
+    LatLon,
+)
 
 
 class TczewTransportData(TransportData):
@@ -81,4 +88,3 @@ class TczewTransportData(TransportData):
                 )
             )
         return variants
-

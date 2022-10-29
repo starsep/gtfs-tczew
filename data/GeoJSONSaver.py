@@ -2,12 +2,12 @@ import geojson
 from geojson import FeatureCollection, Feature, LineString
 
 from configuration import outputDir
-from data.transportData import TransportData
+from data.TransportData import TransportData
 
 
 class GeoJSONSaver:
     @staticmethod
-    def saveBusStopsGeoJSON(transportData: TransportData):
+    def _saveBusStopsGeoJSON(transportData: TransportData):
         stops = transportData.getBusStops().values()
         features = []
         for stop in stops:
@@ -21,7 +21,7 @@ class GeoJSONSaver:
             geojson.dump(FeatureCollection(features=features), f)
 
     @staticmethod
-    def saveBusRoutesVariantsGeoJSON(transportData: TransportData):
+    def _saveBusRoutesVariantsGeoJSON(transportData: TransportData):
         features = []
         for route in transportData.getRoutes():
             for variant in transportData.getRouteVariants(routeId=route.id):
@@ -44,6 +44,5 @@ class GeoJSONSaver:
             geojson.dump(FeatureCollection(features=features), f)
 
     def save(self, transportData: TransportData):
-        self.saveBusStopsGeoJSON(transportData)
-        self.saveBusRoutesVariantsGeoJSON(transportData)
-
+        self._saveBusStopsGeoJSON(transportData)
+        self._saveBusRoutesVariantsGeoJSON(transportData)

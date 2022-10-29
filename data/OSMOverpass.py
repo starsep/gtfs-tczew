@@ -1,15 +1,17 @@
+from abc import ABC
+
 import overpy
 
 from configuration import (
     OVERPASS_URL,
     cache,
 )
-from data.osmSource import Way, Relation, RelationMember, Node, OSMSource
+from data.OSMSource import Way, Relation, RelationMember, Node, OSMSource
 
 
 class OSMOverpass(OSMSource):
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, mainRelationId: int) -> None:
+        super().__init__(mainRelationId)
         self.overpassApi = overpy.Overpass(url=OVERPASS_URL)
         self.overpassRelations = dict()
         self.overpassWays = dict()
@@ -25,8 +27,8 @@ class OSMOverpass(OSMSource):
         """
         return self.overpassApi.query(query)
 
-    def _saveRelationDataFromOverpass(self, relationId: int):
-        overpassResult = self._getRelationDataFromOverpass(relationId)
+    def _saveRelationDataFromOverpass(self):
+        overpassResult = self._getRelationDataFromOverpass(self.mainRelationId)
         for relation in overpassResult.relations:
             self.overpassRelations[relation.id] = relation
         for way in overpassResult.ways:
@@ -85,6 +87,6 @@ class OSMOverpass(OSMSource):
             ],
         )
 
-    def savePublicTransportRelation(self, relationId: int):
-        self._saveRelationDataFromOverpass(relationId=relationId)
-        super().savePublicTransportRelation(relationId)
+    def savePublicTransportRelation(self):
+        self._saveRelationDataFromOverpass()
+        super().savePublicTransportRelation()

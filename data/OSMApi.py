@@ -1,17 +1,19 @@
+from abc import ABC
+
 import httpx
 
 from configuration import (
     OPENSTREETMAP_DOMAIN,
     cache,
 )
-from data.osmSource import Way, Relation, RelationMember, Node, OSMSource
+from data.OSMSource import Way, Relation, RelationMember, Node, OSMSource
 
 OPENSTREETMAP_API = f"{OPENSTREETMAP_DOMAIN}/api/0.6"
 
 
 class OSMApi(OSMSource):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, mainRelationId: int):
+        super().__init__(mainRelationId)
 
     def fetchWay(self, wayId: int) -> Way:
         way = self._fetchWay(wayId)

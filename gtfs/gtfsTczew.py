@@ -1,19 +1,22 @@
 from io import StringIO
-from zipfile import ZipFile
 
 from rich.table import Table
 
-from configuration import outputGTFS
+from data.OSMOverpass import OSMOverpass
+from data.TczewTransportData import TczewTransportData
+from gtfs.gtfsGenerator import GTFSGenerator
 from log import console
-from validator import Validator
+from data.OSMOperatorMerger import Validator, OSMOperatorMerger
 
 
-class GTFS:
+class GTFSTczew(GTFSGenerator):
     def __init__(self):
-        self.validator = Validator()
+        self.validator = OSMOperatorMerger(
+            osmSource=OSMOverpass(mainRelationId=12625881),
+            transportData=TczewTransportData(),
+        )
 
-    @staticmethod
-    def agencyInfo() -> str:
+    def agencyInfo(self) -> str:
         agencyResult = StringIO()
         agencyResult.write("agency_name,agency_url,agency_timezone,agency_lang\n")
         agencyResult.write(
@@ -47,16 +50,6 @@ class GTFS:
             tripsResult.write(f"{trip.routeId},{trip.serviceId},{trip.tripId}\n")
         return tripsResult.getvalue()
 
-    def generate(self):
-        with ZipFile(outputGTFS, "w") as zipOutput:
-            zipOutput.writestr("agency.txt", self.agencyInfo())
-            zipOutput.writestr("stops.txt", self.stops())
-            zipOutput.writestr("routes.txt", self.routes())
-            zipOutput.writestr("trips.txt", self.trips())
-
-    def generateGeoJSONs(self):
-        self.validator.transportData.saveBusRoutesVariantsGeoJSON()
-
     def showTrips(self):
         stopIdToName = {
             stop.stopId: stop.stopName for stop in self.validator.validateStops()
@@ -65,6 +58,7 @@ class GTFS:
             route.routeId: route.routeName for route in self.validator.validatedRoutes()
         }
         for trip in self.validator.validatedTrips():
+            print(routeIdToName)
             table = Table(
                 title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}"
             )
@@ -77,10 +71,3 @@ class GTFS:
 
             console.print(" or ".join([f"ref={ref}" for ref in trip.busStopIds]))
             console.print(table)
-
-
-if __name__ == "__main__":
-    gtfs = GTFS()
-    gtfs.generate()
-    gtfs.generateGeoJSONs()
-    # gtfs.showTrips()
