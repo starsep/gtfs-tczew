@@ -12,6 +12,7 @@ TripId = str
 ShapeId = str
 ServiceId = str
 GTFSDate = str  # YYYYMMDD
+Time = str  # HH:MM:SS
 
 
 @dataclass
@@ -34,7 +35,6 @@ class GTFSRoute:
 @dataclass
 class GTFSTrip:
     routeId: RouteId
-    serviceId: ServiceId
     tripId: TripId
     shape: List[LatLon]
     busStopIds: List[StopId]
@@ -42,6 +42,11 @@ class GTFSTrip:
 
     def busStopNames(self, stops: Dict[StopId, GTFSStop]):
         return [stops[busStopId].stopName for busStopId in self.busStopIds]
+
+
+@dataclass
+class GTFSTripWithService(GTFSTrip):
+    serviceId: ServiceId
 
 
 @dataclass
@@ -67,12 +72,23 @@ class GTFSService:
 
 
 @dataclass
+class GTFSStopTime:
+    tripId: TripId
+    arrivalTime: Time
+    departureTime: Time
+    stopId: StopId
+    stopSequence: int
+
+
+@dataclass
 class GTFSData:
     stops: Dict[StopId, GTFSStop]
     routes: Dict[RouteId, GTFSRoute]
     trips: Dict[TripId, GTFSTrip]
+    tripsWithService: List[GTFSTripWithService]
     shapes: List[GTFSShape]
     services: List[GTFSService]
+    stopTimes: List[GTFSStopTime]
 
 
 class GTFSConverter(ABC):
@@ -96,17 +112,30 @@ class GTFSConverter(ABC):
     def services(self) -> List[GTFSService]:
         raise NotImplementedError
 
+    @abstractmethod
+    def tripsWithService(
+        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
+    ) -> List[GTFSTripWithService]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
+        raise NotImplementedError
+
     def data(self) -> GTFSData:
         stops = self.stops()
         routes = self.routes()
         trips = self.trips(stops=stops)
         shapes = self.shapes(trips=trips)
+        services = self.services()
         return GTFSData(
             stops=stops,
             routes=routes,
             trips=trips,
+            tripsWithService=self.tripsWithService(trips, services),
             shapes=shapes,
-            services=self.services(),
+            services=services,
+            stopTimes=self.stopTimes(trips),
         )
 
 
@@ -120,4 +149,21 @@ def shapesFromTrips(trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
         )
         for trip in trips.values()
         for pointIndex, point in enumerate(trip.shape)
+    ]
+
+
+def tripForEveryService(
+    trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
+) -> List[GTFSTripWithService]:
+    return [
+        GTFSTripWithService(
+            routeId=trip.routeId,
+            tripId=f"{trip.tripId}-{service.serviceId}",
+            shapeId=trip.shapeId,
+            shape=trip.shape,
+            busStopIds=trip.busStopIds,
+            serviceId=service.serviceId,
+        )
+        for service in services
+        for trip in trips.values()
     ]

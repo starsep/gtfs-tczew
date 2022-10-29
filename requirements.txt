@@ -317,6 +317,8 @@ tornado==6.2
     #   nbclassic
     #   notebook
     #   terminado
+tqdm==4.64.1
+    # via -r requirements.in
 traitlets==5.5.0
     # via
     #   ipykernel

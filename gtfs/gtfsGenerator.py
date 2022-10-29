@@ -37,6 +37,10 @@ class GTFSGenerator(ABC):
     def feedInfoString(self) -> str:
         raise NotImplementedError
 
+    @abstractmethod
+    def stopTimesString(self) -> str:
+        raise NotImplementedError
+
     def generate(self):
         with ZipFile(outputGTFS, "w") as zipOutput:
             zipOutput.writestr("agency.txt", self.agencyInfo())
@@ -47,3 +51,4 @@ class GTFSGenerator(ABC):
             zipOutput.writestr("calendar.txt", self.calendarString())
             zipOutput.writestr("attributions.txt", self.attributionsString())
             zipOutput.writestr("feed_info.txt", self.feedInfoString())
+            zipOutput.writestr("stop_times.txt", self.stopTimesString())

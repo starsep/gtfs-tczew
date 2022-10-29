@@ -1,6 +1,6 @@
 from abc import abstractmethod, ABC
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 
 @dataclass(eq=True)
@@ -38,6 +38,19 @@ class Timetable:
     date: str
 
 
+@dataclass
+class StopTime:
+    time: str
+    tripId: str
+
+
+@dataclass
+class StopTimes:
+    stopId: int
+    routeId: int
+    dayTypeToTimes: Dict[str, List[StopTime]]
+
+
 class TransportData(ABC):
     @abstractmethod
     def getBusStops(self, timetableId: int = 0) -> Dict[int, BusStop]:
@@ -55,4 +68,10 @@ class TransportData(ABC):
     def getRouteVariants(
         self, routeId: int, timetableId: int = 0, transits: int = 1
     ) -> List[RouteVariant]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def stopTimes(
+        self, busStopIdRouteIds: List[Tuple[int, int]], timetableId: int = 0
+    ) -> List[StopTimes]:
         raise NotImplementedError

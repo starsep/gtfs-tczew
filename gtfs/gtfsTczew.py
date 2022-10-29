@@ -2,7 +2,7 @@ from io import StringIO
 
 from rich.table import Table
 
-from configuration import feedVersion
+from configuration import feedVersion, TIMEZONE
 from data.OSMConverter import OSMConverter
 from data.OSMOperatorMerger import OSMOperatorMerger
 from data.OSMOverpass import OSMOverpass
@@ -24,7 +24,7 @@ class GTFSTczew(GTFSGenerator):
         agencyResult = StringIO()
         agencyResult.write("agency_name,agency_url,agency_timezone,agency_lang\n")
         agencyResult.write(
-            f"Przewozy Autobusowe Gryf sp. z o.o. sp. k.,http://rozklady.tczew.pl/,Europe/Warsaw,pl"
+            f"Przewozy Autobusowe Gryf sp. z o.o. sp. k.,http://rozklady.tczew.pl/,{TIMEZONE},pl"
         )
         return agencyResult.getvalue()
 
@@ -50,7 +50,7 @@ class GTFSTczew(GTFSGenerator):
     def tripsString(self) -> str:
         tripsResult = StringIO()
         tripsResult.write("route_id,service_id,trip_id\n")
-        for trip in self.gtfsData.trips.values():
+        for trip in self.gtfsData.tripsWithService:
             tripsResult.write(f"{trip.routeId},{trip.serviceId},{trip.tripId}\n")
         return tripsResult.getvalue()
 
@@ -126,4 +126,13 @@ class GTFSTczew(GTFSGenerator):
         result = StringIO()
         result.write("feed_publisher_name,feed_publisher_url,feed_lang,feed_version\n")
         result.write(f'"Filip Czaplicki","https://starsep.com/gtfs/",pl,{feedVersion}')
+        return result.getvalue()
+
+    def stopTimesString(self) -> str:
+        result = StringIO()
+        result.write("trip_id,arrival_time,departure_time,stop_id,stop_sequence\n")
+        for stopTime in self.gtfsData.stopTimes:
+            result.write(
+                f"{stopTime.tripId},{stopTime.arrivalTime},{stopTime.departureTime},{stopTime.stopId},{stopTime.stopSequence}\n"
+            )
         return result.getvalue()

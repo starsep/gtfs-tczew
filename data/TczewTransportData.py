@@ -1,4 +1,6 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
+
+from tqdm import tqdm
 
 from data.TczewApi import TczewBusesAPI
 from data.TransportData import (
@@ -8,7 +10,10 @@ from data.TransportData import (
     RouteVariant,
     Timetable,
     LatLon,
+    StopTimes,
+    StopTime,
 )
+from log import console
 
 
 class TczewTransportData(TransportData):
@@ -88,3 +93,22 @@ class TczewTransportData(TransportData):
                 )
             )
         return variants
+
+    def stopTimes(
+        self, busStopIdRouteIds: List[Tuple[int, int]], timetableId: int = 0
+    ) -> List[StopTimes]:
+        result = []
+        for (stopId, routeId) in tqdm(busStopIdRouteIds):
+            timetable = self.tczewBusesApi.getBusStopTimeTable(
+                timetableId=timetableId, busStopId=stopId, routeId=routeId
+            )
+            dayTypeToTimes = dict()
+            for dayTypeTimes in timetable[3]:
+                dayType = dayTypeTimes[0]
+                dayTypeToTimes[dayType] = [
+                    StopTime(tripId=x[0], time=x[2]) for x in dayTypeTimes[4]
+                ]
+            result.append(
+                StopTimes(stopId=stopId, routeId=routeId, dayTypeToTimes=dayTypeToTimes)
+            )
+        return result

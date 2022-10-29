@@ -11,6 +11,8 @@ from data.GTFSConverter import (
     GTFSShape,
     shapesFromTrips,
     GTFSService,
+    GTFSStopTime,
+    GTFSTripWithService,
 )
 from data.OSMSource import Relation, OSMSource, Way, Node
 from data.TransportData import LatLon
@@ -107,13 +109,11 @@ class OSMConverter(GTFSConverter):
         return result
 
     def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
-        serviceId = "0"  # TODO
         result = dict()
         for osmRoute in self.routesOSM:
             for gtfsTripId, route in self._validateOSMVariants(osmRoute).items():
                 result[gtfsTripId] = GTFSTrip(
                     routeId=route.tags[GTFS_ROUTE_ID_TAG],
-                    serviceId=serviceId,
                     tripId=gtfsTripId,
                     shapeId=gtfsTripId,
                     shape=self._extractRouteGeometry(route),
@@ -125,4 +125,12 @@ class OSMConverter(GTFSConverter):
         return shapesFromTrips(trips)
 
     def services(self) -> List[GTFSService]:
+        return []
+
+    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
+        return []
+
+    def tripsWithService(
+        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
+    ) -> List[GTFSTripWithService]:
         return []

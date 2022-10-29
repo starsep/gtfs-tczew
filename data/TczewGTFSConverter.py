@@ -1,6 +1,8 @@
 from typing import List, Dict
 
-from configuration import feedVersion
+import pytz
+
+from configuration import feedVersion, timezone, startTime, startTimeUTC
 from data.GTFSConverter import (
     GTFSConverter,
     GTFSRoute,
@@ -12,6 +14,9 @@ from data.GTFSConverter import (
     GTFSShape,
     shapesFromTrips,
     GTFSService,
+    GTFSStopTime,
+    GTFSTripWithService,
+    tripForEveryService,
 )
 from data.TczewTransportData import TczewTransportData
 
@@ -39,11 +44,9 @@ class TczewGTFSConverter(GTFSConverter):
         }
 
     def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
-        serviceId = "0"  # TODO
         return {
             str(variant.id): GTFSTrip(
                 routeId=str(route.id),
-                serviceId=serviceId,
                 tripId=str(variant.id),
                 shapeId=str(variant.id),
                 shape=variant.geometry,
@@ -53,24 +56,85 @@ class TczewGTFSConverter(GTFSConverter):
             for variant in route.variants
         }
 
+    def tripsWithService(
+        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
+    ) -> List[GTFSTripWithService]:
+        return tripForEveryService(trips, services)
+
     def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
         return shapesFromTrips(trips)
 
     def services(self) -> List[GTFSService]:
+        serviceWorkDay = GTFSService(
+            serviceId="WD",
+            monday=True,
+            tuesday=True,
+            wednesday=True,
+            thursday=True,
+            friday=True,
+            saturday=False,
+            sunday=False,
+            startDate=feedVersion,
+            endDate="20300101",
+        )
+        serviceSaturday = GTFSService(
+            serviceId="SA",
+            monday=False,
+            tuesday=False,
+            wednesday=False,
+            thursday=False,
+            friday=False,
+            saturday=True,
+            sunday=False,
+            startDate=feedVersion,
+            endDate="20300101",
+        )
+        serviceSunday = GTFSService(
+            serviceId="SU",
+            monday=False,
+            tuesday=False,
+            wednesday=False,
+            thursday=False,
+            friday=False,
+            saturday=False,
+            sunday=True,
+            startDate=feedVersion,
+            endDate="20300101",
+        )
         return [
-            GTFSService(
-                serviceId=str(index),
-                monday=True,
-                tuesday=True,
-                wednesday=True,
-                thursday=True,
-                friday=True,
-                saturday=True,
-                sunday=True,
-                startDate=feedVersion,
-                endDate="20300101",
-            )
-            for index, timetable in enumerate(
-                self.tczewTransportData.getTimetableInformation()
-            )
+            serviceWorkDay,
+            serviceSaturday,
+            serviceSunday
+            # for index, timetable in enumerate(self.tczewTransportData.getTimetableInformation())
+            # TODO: handle multiple timetables
         ]
+
+    def parseTime(self, time: str) -> str:
+        minuteRaw = int(time[-2])
+        minute = minuteRaw % 60
+        hour = int(time[:len(time)-2]) + minuteRaw // 60
+        return startTimeUTC.replace(hour=hour, minute=minute, second=0).astimezone(timezone).strftime("%H:%M:%S")
+
+    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
+        busStopRouteIds = [
+            (int(busStopId), int(trip.routeId))
+            for trip in trips.values()
+            for busStopId in trip.busStopIds
+        ]
+        result = []
+        for stopTimes in self.tczewTransportData.stopTimes(busStopRouteIds):
+            for dayType, times in stopTimes.dayTypeToTimes.items():
+                for time in times:
+                    parsedTime = self.parseTime(time.time)
+                    stopId = str(stopTimes.stopId)
+                    stopSequence = trips[str(time.tripId)].busStopIds.index(stopId)
+                    result.append(
+                        GTFSStopTime(
+                            tripId=time.tripId,
+                            arrivalTime=parsedTime,
+                            departureTime=parsedTime,
+                            stopId=stopId,
+                            stopSequence=stopSequence,
+                        )
+                    )
+        return result
