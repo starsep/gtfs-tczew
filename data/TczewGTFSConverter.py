@@ -1,6 +1,6 @@
-from datetime import datetime
 from typing import List, Dict
 
+from configuration import feedVersion
 from data.GTFSConverter import (
     GTFSConverter,
     GTFSRoute,
@@ -67,7 +67,7 @@ class TczewGTFSConverter(GTFSConverter):
                 friday=True,
                 saturday=True,
                 sunday=True,
-                startDate=datetime.now().date().strftime("%Y%m%d"),
+                startDate=feedVersion,
                 endDate="20300101",
             )
             for index, timetable in enumerate(

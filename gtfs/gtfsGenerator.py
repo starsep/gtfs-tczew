@@ -29,6 +29,14 @@ class GTFSGenerator(ABC):
     def calendarString(self) -> str:
         raise NotImplementedError
 
+    @abstractmethod
+    def attributionsString(self) -> str:
+        raise NotImplementedError
+
+    @abstractmethod
+    def feedInfoString(self) -> str:
+        raise NotImplementedError
+
     def generate(self):
         with ZipFile(outputGTFS, "w") as zipOutput:
             zipOutput.writestr("agency.txt", self.agencyInfo())
@@ -37,3 +45,5 @@ class GTFSGenerator(ABC):
             zipOutput.writestr("trips.txt", self.tripsString())
             zipOutput.writestr("shapes.txt", self.shapesString())
             zipOutput.writestr("calendar.txt", self.calendarString())
+            zipOutput.writestr("attributions.txt", self.attributionsString())
+            zipOutput.writestr("feed_info.txt", self.feedInfoString())

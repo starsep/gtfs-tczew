@@ -2,6 +2,7 @@ from io import StringIO
 
 from rich.table import Table
 
+from configuration import feedVersion
 from data.OSMConverter import OSMConverter
 from data.OSMOperatorMerger import OSMOperatorMerger
 from data.OSMOverpass import OSMOverpass
@@ -106,3 +107,23 @@ class GTFSTczew(GTFSGenerator):
                 f"{service.serviceId},{daysBinary},{service.startDate},{service.endDate}\n"
             )
         return calendarResult.getvalue()
+
+    def attributionsString(self) -> str:
+        result = StringIO()
+        result.write(
+            "organization_name,is_producer,is_operator,is_authority,attribution_url\n"
+        )
+        result.write(
+            '"Data from Tczew public transport website",0,0,1,"http://rozklady.tczew.pl/\n'
+        )
+        result.write(
+            '"Bus shapes based on data by: © OpenStreetMap contributors (ODbL license)"'
+        )
+        result.write(',0,0,1,"https://www.openstreetmap.org/copyright/"\n')
+        return result.getvalue()
+
+    def feedInfoString(self) -> str:
+        result = StringIO()
+        result.write("feed_publisher_name,feed_publisher_url,feed_lang,feed_version\n")
+        result.write(f'"Filip Czaplicki","https://starsep.com/gtfs/",pl,{feedVersion}')
+        return result.getvalue()
