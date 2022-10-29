@@ -98,7 +98,6 @@ class OSMOperatorMerger(Validator):
     ):
         table = Table(title="OSM route_master vs Operator Route")
 
-        table.add_column("ref")
         table.add_column("ref OSM")
         table.add_column("name Operator")
         table.add_column("gtfs:route_id OSM")
@@ -119,7 +118,6 @@ class OSMOperatorMerger(Validator):
             )
             operatorId = str(operatorRoute.id) if operatorRoute is not None else None
             table.add_row(
-                ref,
                 osmRef,
                 operatorName,
                 gtfsRouteIdOSM,
