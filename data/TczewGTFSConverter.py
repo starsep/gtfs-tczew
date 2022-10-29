@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 import pytz
 
@@ -19,6 +19,8 @@ from data.GTFSConverter import (
     tripForEveryService,
 )
 from data.TczewTransportData import TczewTransportData
+
+DAY_TYPE_TO_SERVICE = dict(PW="WD", SB="SA", ND="SU")
 
 
 class TczewGTFSConverter(GTFSConverter):
@@ -109,11 +111,20 @@ class TczewGTFSConverter(GTFSConverter):
             # TODO: handle multiple timetables
         ]
 
-    def parseTime(self, time: str) -> str:
-        minuteRaw = int(time[-2])
+    @staticmethod
+    def parseTime(time: str) -> Tuple[int, int]:
+        minuteRaw = int(time[-2:])
         minute = minuteRaw % 60
-        hour = int(time[:len(time)-2]) + minuteRaw // 60
-        return startTimeUTC.replace(hour=hour, minute=minute, second=0).astimezone(timezone).strftime("%H:%M:%S")
+        hour = int(time[: len(time) - 2]) + minuteRaw // 60
+        return hour, minute
+
+    def parseTimeTimezone(self, time: str) -> str:
+        hour, minute = self.parseTime(time)
+        return (
+            startTimeUTC.replace(hour=hour, minute=minute, second=0)
+            .astimezone(timezone)
+            .strftime("%H:%M:%S")
+        )
 
     def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
         busStopRouteIds = [
@@ -124,13 +135,14 @@ class TczewGTFSConverter(GTFSConverter):
         result = []
         for stopTimes in self.tczewTransportData.stopTimes(busStopRouteIds):
             for dayType, times in stopTimes.dayTypeToTimes.items():
+                tripSuffix = DAY_TYPE_TO_SERVICE[dayType]
                 for time in times:
-                    parsedTime = self.parseTime(time.time)
+                    parsedTime = self.parseTimeTimezone(time.time)
                     stopId = str(stopTimes.stopId)
                     stopSequence = trips[str(time.tripId)].busStopIds.index(stopId)
                     result.append(
                         GTFSStopTime(
-                            tripId=time.tripId,
+                            tripId=f"{time.tripId}-{tripSuffix}",
                             arrivalTime=parsedTime,
                             departureTime=parsedTime,
                             stopId=stopId,

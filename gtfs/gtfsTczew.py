@@ -62,7 +62,6 @@ class GTFSTczew(GTFSGenerator):
             route.routeId: route.routeName for route in self.gtfsData.routes.values()
         }
         for trip in self.gtfsData.trips.values():
-            print(routeIdToName)
             table = Table(
                 title=f"Route {routeIdToName[trip.routeId]}, trip {trip.tripId}"
             )
@@ -111,7 +110,7 @@ class GTFSTczew(GTFSGenerator):
     def attributionsString(self) -> str:
         result = StringIO()
         result.write(
-            "organization_name,is_producer,is_operator,is_authority,attribution_url\n"
+            "organization_name,is_producer,is_operator,is_authority,attribution_url,agency_id\n"
         )
         result.write(
             '"Data from Tczew public transport website",0,0,1,"http://rozklady.tczew.pl/\n'
