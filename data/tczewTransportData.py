@@ -1,55 +1,10 @@
-from dataclasses import dataclass
 from typing import List, Dict
 
-import geojson
-from geojson import Feature, FeatureCollection, Point, LineString
-
-from api import TczewBusesAPI
-from configuration import outputDir
+from data.tczewApi import TczewBusesAPI
+from data.transportData import TransportData, BusStop, Route, RouteVariant, Timetable, LatLon
 
 
-@dataclass(eq=True)
-class LatLon:
-    latitude: float
-    longitude: float
-
-    def toPoint(self):
-        return Point((self.longitude, self.latitude))
-
-
-@dataclass
-class BusStop(LatLon):
-    id: str
-    name: str
-
-
-@dataclass
-class RouteVariant:
-    id: int
-    # ?: int
-    # ?: int
-    direction: str
-    firstStopName: str
-    lastStopName: str
-    busStopsIds: List[int]
-    geometry: List[LatLon]
-
-
-@dataclass
-class Route:
-    id: int
-    name: str
-    variants: List[RouteVariant]
-
-
-@dataclass
-class Timetable:
-    id: int
-    date: str
-    future: bool  # ?
-
-
-class TransportData(object):
+class TczewTransportData(TransportData):
     def __init__(self) -> None:
         super().__init__()
         self.tczewBusesApi = TczewBusesAPI()
@@ -80,7 +35,7 @@ class TransportData(object):
 
     def getTimetableInformation(self) -> List[Timetable]:
         return [
-            Timetable(id=timetable[0], date=timetable[1], future=timetable[2])
+            Timetable(id=timetable[0], date=timetable[1])
             for timetable in self.tczewBusesApi.getTimetableInformation()
         ]
 
@@ -127,41 +82,3 @@ class TransportData(object):
             )
         return variants
 
-    def saveBusStopsGeoJSON(self):
-        stops = self.getBusStops().values()
-        features = []
-        for stop in stops:
-            features.append(
-                Feature(
-                    geometry=stop.toPoint(),
-                    properties=dict(ref=stop.id, name=stop.name),
-                )
-            )
-        with (outputDir / "stops.geojson").open("w") as f:
-            geojson.dump(FeatureCollection(features=features), f)
-
-    def saveBusRoutesVariantsGeoJSON(self):
-        features = []
-        for route in self.getRoutes():
-            for variant in self.getRouteVariants(routeId=route.id):
-                points = [
-                    (point.latitude, point.longitude) for point in variant.geometry
-                ]
-                properties = dict(
-                    name=f"Bus {route.name}",
-                    variantId=variant.id,
-                    to=variant.lastStopName,
-                )
-                properties["from"] = variant.firstStopName
-                features.append(
-                    Feature(
-                        geometry=LineString(points),
-                        properties=properties,
-                    )
-                )
-        with (outputDir / f"routes.geojson").open("w") as f:
-            geojson.dump(FeatureCollection(features=features), f)
-
-    def generateGeoJSONs(self):
-        self.saveBusStopsGeoJSON()
-        self.saveBusRoutesVariantsGeoJSON()

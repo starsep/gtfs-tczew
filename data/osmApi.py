@@ -4,7 +4,7 @@ from configuration import (
     OPENSTREETMAP_DOMAIN,
     cache,
 )
-from source.osmSource import Way, Relation, RelationMember, Node, OSMSource
+from data.osmSource import Way, Relation, RelationMember, Node, OSMSource
 
 OPENSTREETMAP_API = f"{OPENSTREETMAP_DOMAIN}/api/0.6"
 

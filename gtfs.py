@@ -3,7 +3,7 @@ from zipfile import ZipFile
 
 from rich.table import Table
 
-from configuration import outputDir, outputGTFS
+from configuration import outputGTFS
 from log import console
 from validator import Validator
 

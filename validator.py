@@ -5,11 +5,12 @@ from typing import List, Dict
 from rich.table import Table
 
 from configuration import TCZEW_PUBLIC_TRANSPORT_RELATION_ID
+from data.tczewTransportData import TczewTransportData
 from log import printWarning, printError, console
-from source.osmOverpass import OSMOverpass
-from source.osmSource import Node, Relation
+from data.osmOverpass import OSMOverpass
+from data.osmSource import Node, Relation
 from pyproj import Geod
-from transportData import TransportData, BusStop, LatLon, RouteVariant
+from data.transportData import TransportData, BusStop, LatLon, RouteVariant
 
 STOP_DISTANCE_WARNING_THRESHOLD = 100.0
 STOP_DISTANCE_ERROR_THRESHOLD = 200.0
@@ -40,7 +41,7 @@ class ValidatedTrip:
 
 class Validator:
     def __init__(self):
-        self.transportData = TransportData()
+        self.transportData = TczewTransportData()
         self.osmSource = OSMOverpass()
         self.osmSource.savePublicTransportRelation(TCZEW_PUBLIC_TRANSPORT_RELATION_ID)
         self.stopsTczew = self.transportData.getBusStops()

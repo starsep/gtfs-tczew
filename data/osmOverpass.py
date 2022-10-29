@@ -4,7 +4,7 @@ from configuration import (
     OVERPASS_URL,
     cache,
 )
-from source.osmSource import Way, Relation, RelationMember, Node, OSMSource
+from data.osmSource import Way, Relation, RelationMember, Node, OSMSource
 
 
 class OSMOverpass(OSMSource):
