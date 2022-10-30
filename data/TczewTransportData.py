@@ -1,7 +1,5 @@
 from typing import List, Dict, Tuple
 
-from tqdm import tqdm
-
 from data.TczewApi import TczewBusesAPI
 from data.TransportData import (
     TransportData,
@@ -13,7 +11,6 @@ from data.TransportData import (
     StopTimes,
     StopTime,
 )
-from log import console
 
 
 class TczewTransportData(TransportData):
@@ -94,20 +91,41 @@ class TczewTransportData(TransportData):
             )
         return variants
 
+    @staticmethod
+    def parseFirstMinutes(time: str) -> int:
+        return int(time[: len(time) - 2]) * 60 + int(time[-2:])
+
     def stopTimes(
         self, busStopIdRouteIds: List[Tuple[int, int]], timetableId: int = 0
     ) -> List[StopTimes]:
         result = []
-        for (stopId, routeId) in tqdm(busStopIdRouteIds):
+        for (stopId, routeId) in busStopIdRouteIds:
             timetable = self.tczewBusesApi.getBusStopTimeTable(
                 timetableId=timetableId, busStopId=stopId, routeId=routeId
             )
             dayTypeToTimes = dict()
             for dayTypeTimes in timetable[3]:
                 dayType = dayTypeTimes[0]
-                dayTypeToTimes[dayType] = [
-                    StopTime(tripId=x[0], time=x[2]) for x in dayTypeTimes[4]
-                ]
+                dayTypeToTimes[dayType] = []
+                firstRaw = dict()
+                for x in dayTypeTimes[4]:
+                    routeVariantId = x[0]
+                    tripId = str(x[1])
+                    raw = x[2]
+                    if routeVariantId not in firstRaw:
+                        firstRaw[routeVariantId] = raw
+                    minutes = (
+                        self.parseFirstMinutes(firstRaw[routeVariantId])
+                        - int(firstRaw[routeVariantId])
+                        + int(raw)
+                    )
+                    dayTypeToTimes[dayType].append(
+                        StopTime(
+                            routeVariantId=routeVariantId,
+                            tripId=tripId,
+                            minutes=minutes,
+                        )
+                    )
             result.append(
                 StopTimes(stopId=stopId, routeId=routeId, dayTypeToTimes=dayTypeToTimes)
             )

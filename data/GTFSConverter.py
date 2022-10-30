@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from geojson import Point
 
@@ -8,6 +8,7 @@ from data.TransportData import LatLon
 
 StopId = str
 RouteId = str
+RouteVariantId = str
 TripId = str
 ShapeId = str
 ServiceId = str
@@ -33,9 +34,9 @@ class GTFSRoute:
 
 
 @dataclass
-class GTFSTrip:
+class GTFSRouteVariant:
     routeId: RouteId
-    tripId: TripId
+    routeVariantId: RouteVariantId
     shape: List[LatLon]
     busStopIds: List[StopId]
     shapeId: ShapeId
@@ -45,8 +46,10 @@ class GTFSTrip:
 
 
 @dataclass
-class GTFSTripWithService(GTFSTrip):
+class GTFSTrip(GTFSRouteVariant):
+    tripStartMinutes: int
     serviceId: ServiceId
+    tripId: TripId
 
 
 @dataclass
@@ -84,8 +87,8 @@ class GTFSStopTime:
 class GTFSData:
     stops: Dict[StopId, GTFSStop]
     routes: Dict[RouteId, GTFSRoute]
+    routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
     trips: Dict[TripId, GTFSTrip]
-    tripsWithService: List[GTFSTripWithService]
     shapes: List[GTFSShape]
     services: List[GTFSService]
     stopTimes: List[GTFSStopTime]
@@ -101,11 +104,22 @@ class GTFSConverter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
+    def routeVariants(
+        self, stops: Dict[StopId, GTFSStop]
+    ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         raise NotImplementedError
 
     @abstractmethod
-    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
+    def trips(
+        self,
+        stops: Dict[StopId, GTFSStop],
+        services: List[GTFSService],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+    ) -> Dict[TripId, GTFSTrip]:
+        raise NotImplementedError
+
+    @abstractmethod
+    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
         raise NotImplementedError
 
     @abstractmethod
@@ -113,57 +127,42 @@ class GTFSConverter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def tripsWithService(
-        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
-    ) -> List[GTFSTripWithService]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
+    def stopTimes(
+        self,
+        routes: Dict[RouteId, GTFSRoute],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+        trips: Dict[TripId, GTFSTrip],
+    ) -> List[GTFSStopTime]:
         raise NotImplementedError
 
     def data(self) -> GTFSData:
         stops = self.stops()
         routes = self.routes()
-        trips = self.trips(stops=stops)
-        shapes = self.shapes(trips=trips)
+        routeVariants = self.routeVariants(stops=stops)
         services = self.services()
+        trips = self.trips(stops=stops, services=services, routeVariants=routeVariants)
+        shapes = self.shapes(routeVariants=routeVariants)
         return GTFSData(
             stops=stops,
             routes=routes,
+            routeVariants=routeVariants,
             trips=trips,
-            tripsWithService=self.tripsWithService(trips, services),
             shapes=shapes,
             services=services,
-            stopTimes=self.stopTimes(trips),
+            stopTimes=self.stopTimes(
+                routes=routes, routeVariants=routeVariants, trips=trips
+            ),
         )
 
 
-def shapesFromTrips(trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
+def shapesFromRouteVariants(routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
     return [
         GTFSShape(
-            shapeId=trip.shapeId,
+            shapeId=routeVariant.shapeId,
             shapeLat=point.latitude,
             shapeLon=point.longitude,
             shapeSequence=pointIndex,
         )
-        for trip in trips.values()
-        for pointIndex, point in enumerate(trip.shape)
-    ]
-
-
-def tripForEveryService(
-    trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
-) -> List[GTFSTripWithService]:
-    return [
-        GTFSTripWithService(
-            routeId=trip.routeId,
-            tripId=f"{trip.tripId}-{service.serviceId}",
-            shapeId=trip.shapeId,
-            shape=trip.shape,
-            busStopIds=trip.busStopIds,
-            serviceId=service.serviceId,
-        )
-        for service in services
-        for trip in trips.values()
+        for routeVariant in routeVariants.values()
+        for pointIndex, point in enumerate(routeVariant.shape)
     ]

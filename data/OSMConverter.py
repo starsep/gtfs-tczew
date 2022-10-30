@@ -9,10 +9,11 @@ from data.GTFSConverter import (
     StopId,
     TripId,
     GTFSShape,
-    shapesFromTrips,
+    shapesFromRouteVariants,
     GTFSService,
     GTFSStopTime,
-    GTFSTripWithService,
+    RouteVariantId,
+    GTFSRouteVariant,
 )
 from data.OSMSource import Relation, OSMSource, Way, Node
 from data.TransportData import LatLon
@@ -108,29 +109,39 @@ class OSMConverter(GTFSConverter):
             result.append(stop.tags["ref"])
         return result
 
-    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
+    def routeVariants(
+        self, stops: Dict[StopId, GTFSStop]
+    ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         result = dict()
         for osmRoute in self.routesOSM:
-            for gtfsTripId, route in self._validateOSMVariants(osmRoute).items():
-                result[gtfsTripId] = GTFSTrip(
+            for routeVariantId, route in self._validateOSMVariants(osmRoute).items():
+                result[routeVariantId] = GTFSRouteVariant(
                     routeId=route.tags[GTFS_ROUTE_ID_TAG],
-                    tripId=gtfsTripId,
-                    shapeId=gtfsTripId,
+                    routeVariantId=routeVariantId,
+                    shapeId=routeVariantId,
                     shape=self._extractRouteGeometry(route),
                     busStopIds=self._extractBusStopIds(route),
                 )
         return result
 
-    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
-        return shapesFromTrips(trips)
+    def trips(
+        self,
+        stops: Dict[StopId, GTFSStop],
+        services: List[GTFSService],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+    ) -> Dict[TripId, GTFSTrip]:
+        return dict()
+
+    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+        return shapesFromRouteVariants(routeVariants)
 
     def services(self) -> List[GTFSService]:
         return []
 
-    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
-        return []
-
-    def tripsWithService(
-        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
-    ) -> List[GTFSTripWithService]:
+    def stopTimes(
+        self,
+        routes: Dict[RouteId, GTFSRoute],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+        trips: Dict[TripId, GTFSTrip],
+    ) -> List[GTFSStopTime]:
         return []

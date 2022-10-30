@@ -50,7 +50,7 @@ class GTFSTczew(GTFSGenerator):
     def tripsString(self) -> str:
         tripsResult = StringIO()
         tripsResult.write("route_id,service_id,trip_id\n")
-        for trip in self.gtfsData.tripsWithService:
+        for trip in self.gtfsData.trips.values():
             tripsResult.write(f"{trip.routeId},{trip.serviceId},{trip.tripId}\n")
         return tripsResult.getvalue()
 

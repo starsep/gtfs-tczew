@@ -4,7 +4,6 @@ from typing import List, Dict
 from pyproj import Geod
 from rich.table import Table
 
-from configuration import cache
 from data.GTFSConverter import (
     GTFSConverter,
     GTFSStop,
@@ -14,14 +13,13 @@ from data.GTFSConverter import (
     TripId,
     StopId,
     GTFSShape,
-    shapesFromTrips,
+    shapesFromRouteVariants,
     GTFSService,
     GTFSData,
     GTFSStopTime,
-    GTFSTripWithService,
-    tripForEveryService,
+    RouteVariantId,
+    GTFSRouteVariant,
 )
-from data.OSMConverter import OSMConverter
 from log import printWarning, printError, console
 
 STOP_DISTANCE_WARNING_THRESHOLD = 100.0
@@ -36,12 +34,6 @@ class OSMOperatorMerger(GTFSConverter):
     ):
         self.operatorData = operatorData
         self.osmData = osmData
-        self.stopsOperator = self.operatorData.stops
-        self.stopsOSM = self.osmData.stops
-        self.routesOperator = self.operatorData.routes
-        self.routesOSM = self.osmData.routes
-        self.tripsOperator = self.operatorData.trips
-        self.tripsOSM = self.osmData.trips
         self.wgs84Geod = Geod(ellps="WGS84")
 
     @staticmethod
@@ -67,21 +59,25 @@ class OSMOperatorMerger(GTFSConverter):
             printWarning(message)
 
     def stops(self) -> Dict[StopId, GTFSStop]:
-        osmIds = set(self.stopsOSM.keys())
-        operatorIds = set(self.stopsOperator.keys())
-        missingOSMIds = sorted(operatorIds - osmIds)
+        osmIds = set(self.osmData.stops.keys())
+        operatorUsedStopIds = {
+            busStopId
+            for routeVariant in self.operatorData.routeVariants.values()
+            for busStopId in routeVariant.busStopIds
+        }
+        missingOSMIds = sorted(operatorUsedStopIds - osmIds)
         if missingOSMIds:
             queryMissing = " or ".join(map(lambda x: f"ref={x}", missingOSMIds))
             printWarning(f"Missing OSM bus stop refs: {queryMissing}")
-        extraOSMIds = sorted(osmIds - operatorIds)
+        extraOSMIds = sorted(osmIds - operatorUsedStopIds)
         if extraOSMIds:
             printWarning(f"Extra OSM bus stop refs: {extraOSMIds}")
         result = dict()
-        for ref in operatorIds:
+        for ref in operatorUsedStopIds:
             stopOsm = None
-            stopOperator = self.stopsOperator[ref]
-            if ref in self.stopsOSM:
-                stopOsm = self.stopsOSM[ref]
+            stopOperator = self.operatorData.stops[ref]
+            if ref in self.osmData.stops:
+                stopOsm = self.osmData.stops[ref]
                 self._validateStopsDistance(stopOperator, stopOsm)
             outputName = (
                 stopOsm.stopName
@@ -101,7 +97,7 @@ class OSMOperatorMerger(GTFSConverter):
         return result
 
     def _showTableCompareRouteRefs(self):
-        if self.routesOSM.keys() == self.routesOperator.keys():
+        if self.osmData.routes.keys() == self.operatorData.routes.keys():
             return
         table = Table(title="OSM route_master vs Operator Route")
 
@@ -110,10 +106,10 @@ class OSMOperatorMerger(GTFSConverter):
         table.add_column("gtfs:route_id OSM")
         table.add_column("id Operator")
 
-        allRefs = sorted(self.routesOSM.keys() | self.routesOperator.keys())
+        allRefs = sorted(self.osmData.routes.keys() | self.operatorData.routes.keys())
         for ref in allRefs:
-            osmRoute = self.routesOSM.get(ref)
-            operatorRoute = self.routesOperator.get(ref)
+            osmRoute = self.osmData.routes.get(ref)
+            operatorRoute = self.operatorData.routes.get(ref)
             osmRef = osmRoute.routeName if osmRoute is not None else None
             osmId = osmRoute.routeId if osmRoute is not None else None
             operatorName = (
@@ -133,7 +129,7 @@ class OSMOperatorMerger(GTFSConverter):
 
     def routes(self) -> Dict[RouteId, GTFSRoute]:
         self._showTableCompareRouteRefs()
-        return self.routesOperator
+        return self.operatorData.routes
 
     def _showTableCompareRoutes(
         self,
@@ -159,56 +155,68 @@ class OSMOperatorMerger(GTFSConverter):
             table.add_row(refOSM, nameOSM, refOperator, nameOperator, style=style)
         console.print(table)
 
-    def _compareListOfBusStopsTrip(
+    def _compareListOfBusStopsVariant(
         self,
-        osmTrip: GTFSTrip,
-        operatorTrip: GTFSTrip,
+        osmVariant: GTFSRouteVariant,
+        operatorVariant: GTFSRouteVariant,
         stops: Dict[StopId, GTFSStop],
     ):
-        difference = len(osmTrip.busStopIds) != len(operatorTrip.busStopIds) or any(
+        difference = len(osmVariant.busStopIds) != len(
+            operatorVariant.busStopIds
+        ) or any(
             [
                 operatorBusStopId != osmBusStopId
                 for (osmBusStopId, operatorBusStopId) in zip(
-                    osmTrip.busStopIds, operatorTrip.busStopIds
+                    osmVariant.busStopIds, operatorVariant.busStopIds
                 )
             ]
         )
         if difference:
             self._showTableCompareRoutes(
-                osmTrip.busStopIds,
-                osmTrip.busStopNames(stops),
-                operatorTrip.busStopIds,
-                operatorTrip.busStopNames(stops),
-                title=f"Issues in trip {osmTrip.tripId} route {osmTrip.routeId}",
+                osmVariant.busStopIds,
+                osmVariant.busStopNames(stops),
+                operatorVariant.busStopIds,
+                operatorVariant.busStopNames(stops),
+                title=f"Issues in variant {osmVariant.routeVariantId} route {osmVariant.routeId}",
             )
 
-    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
+    def routeVariants(
+        self, stops: Dict[StopId, GTFSStop]
+    ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         result = dict()
-        for tripId, operatorTrip in self.tripsOperator.items():
-            osmTrip = self.tripsOSM.get(tripId)
-            if osmTrip is None:
+        for variantId, operatorVariant in self.operatorData.routeVariants.items():
+            osmVariant = self.osmData.routeVariants.get(variantId)
+            if osmVariant is None:
                 printError(
-                    f"Missing trip {tripId} for route {operatorTrip.routeId} in OSM"
+                    f"Missing variant {variantId} for route {operatorVariant.routeId} in OSM"
                 )
-                result[tripId] = operatorTrip
+                result[variantId] = operatorVariant
                 continue
-            self._compareListOfBusStopsTrip(osmTrip, operatorTrip, stops)
+            self._compareListOfBusStopsVariant(osmVariant, operatorVariant, stops)
             # self._compareTrips(tripId, osmVariant, operatorTrip)
-            result[tripId] = osmTrip
+            result[variantId] = osmVariant
         return result
 
-    def tripsWithService(
-        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
-    ) -> List[GTFSTripWithService]:
-        return tripForEveryService(trips, services)
+    def trips(
+        self,
+        stops: Dict[StopId, GTFSStop],
+        services: List[GTFSService],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+    ) -> Dict[TripId, GTFSTrip]:
+        return self.operatorData.trips
 
-    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
-        return shapesFromTrips(trips)
+    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+        return shapesFromRouteVariants(routeVariants)
 
     def services(self) -> List[GTFSService]:
         return self.operatorData.services
 
-    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
+    def stopTimes(
+        self,
+        routes: Dict[RouteId, GTFSRoute],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+        trips: Dict[TripId, GTFSTrip],
+    ) -> List[GTFSStopTime]:
         return self.operatorData.stopTimes
 
     # def _compareTrips(

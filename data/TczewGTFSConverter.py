@@ -1,8 +1,6 @@
 from typing import List, Dict, Tuple
 
-import pytz
-
-from configuration import feedVersion, timezone, startTime, startTimeUTC
+from configuration import feedVersion, timezone, startTimeUTC
 from data.GTFSConverter import (
     GTFSConverter,
     GTFSRoute,
@@ -12,13 +10,16 @@ from data.GTFSConverter import (
     GTFSTrip,
     TripId,
     GTFSShape,
-    shapesFromTrips,
+    shapesFromRouteVariants,
     GTFSService,
     GTFSStopTime,
-    GTFSTripWithService,
-    tripForEveryService,
+    RouteVariantId,
+    GTFSRouteVariant,
+    ServiceId,
 )
 from data.TczewTransportData import TczewTransportData
+from data.TransportData import StopTime
+from log import console
 
 DAY_TYPE_TO_SERVICE = dict(PW="WD", SB="SA", ND="SU")
 
@@ -45,11 +46,13 @@ class TczewGTFSConverter(GTFSConverter):
             for route in self.tczewRoutes
         }
 
-    def trips(self, stops: Dict[StopId, GTFSStop]) -> Dict[TripId, GTFSTrip]:
+    def routeVariants(
+        self, stops: Dict[StopId, GTFSStop]
+    ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         return {
-            str(variant.id): GTFSTrip(
+            str(variant.id): GTFSRouteVariant(
                 routeId=str(route.id),
-                tripId=str(variant.id),
+                routeVariantId=str(variant.id),
                 shapeId=str(variant.id),
                 shape=variant.geometry,
                 busStopIds=list(map(str, variant.busStopsIds)),
@@ -58,13 +61,37 @@ class TczewGTFSConverter(GTFSConverter):
             for variant in route.variants
         }
 
-    def tripsWithService(
-        self, trips: Dict[TripId, GTFSTrip], services: List[GTFSService]
-    ) -> List[GTFSTripWithService]:
-        return tripForEveryService(trips, services)
+    def trips(
+        self,
+        stops: Dict[StopId, GTFSStop],
+        services: List[GTFSService],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+    ) -> Dict[TripId, GTFSTrip]:
+        result = dict()
+        for variantId, routeVariant in routeVariants.items():
+            startBusStopId = routeVariant.busStopIds[0]
+            busStopRouteId = [(int(startBusStopId), int(routeVariant.routeId))]
+            for stopTimes in self.tczewTransportData.stopTimes(busStopRouteId):
+                for dayType, times in stopTimes.dayTypeToTimes.items():
+                    serviceId = DAY_TYPE_TO_SERVICE[dayType]
+                    for time in times:
+                        if str(time.routeVariantId) == routeVariant.routeVariantId:
+                            tripStartTime = time.minutes
+                            tripId = time.tripId
+                            result[tripId] = GTFSTrip(
+                                tripId=time.tripId,
+                                routeId=routeVariant.routeId,
+                                routeVariantId=routeVariant.routeVariantId,
+                                shape=routeVariant.shape,
+                                busStopIds=routeVariant.busStopIds,
+                                shapeId=routeVariant.shapeId,
+                                tripStartMinutes=tripStartTime,
+                                serviceId=serviceId,
+                            )
+        return result
 
-    def shapes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSShape]:
-        return shapesFromTrips(trips)
+    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+        return shapesFromRouteVariants(routeVariants)
 
     def services(self) -> List[GTFSService]:
         serviceWorkDay = GTFSService(
@@ -112,41 +139,67 @@ class TczewGTFSConverter(GTFSConverter):
         ]
 
     @staticmethod
-    def parseTime(time: str) -> Tuple[int, int]:
-        minuteRaw = int(time[-2:])
-        minute = minuteRaw % 60
-        hour = int(time[: len(time) - 2]) + minuteRaw // 60
-        return hour, minute
-
-    def parseTimeTimezone(self, time: str) -> str:
-        hour, minute = self.parseTime(time)
+    def parseMinutesTimezone(minutes: int) -> str:
+        hour, minute = minutes // 60, minutes % 60
         return (
-            startTimeUTC.replace(hour=hour, minute=minute, second=0)
-            .astimezone(timezone)
+            startTimeUTC.replace(hour=hour + 2, minute=minute, second=0)
+            # TODO: fix timezone issue? currently constant +2 hours
+            # .astimezone(timezone)
             .strftime("%H:%M:%S")
         )
 
-    def stopTimes(self, trips: Dict[TripId, GTFSTrip]) -> List[GTFSStopTime]:
-        busStopRouteIds = [
-            (int(busStopId), int(trip.routeId))
-            for trip in trips.values()
-            for busStopId in trip.busStopIds
+    @staticmethod
+    def _busStopRouteIds(
+        routes: Dict[RouteId, GTFSRoute],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+    ) -> List[Tuple[int, int]]:
+        routeIdToBusStopIds = {routeId: set() for routeId in routes.keys()}
+        for variant in routeVariants.values():
+            for stopId in variant.busStopIds:
+                routeIdToBusStopIds[variant.routeId].add(stopId)
+        return [
+            (int(busStopId), int(routeId))
+            for routeId in routeIdToBusStopIds
+            for busStopId in routeIdToBusStopIds[routeId]
         ]
+
+    @staticmethod
+    def _groupTimesByVariant(
+        times: List[StopTime],
+    ) -> Dict[RouteVariantId, List[StopTime]]:
+        timesGroupedByVariant: Dict[RouteVariantId, List[StopTime]] = dict()
+        for time in times:
+            if time.routeVariantId not in timesGroupedByVariant:
+                timesGroupedByVariant[time.routeVariantId] = []
+            timesGroupedByVariant[time.routeVariantId].append(time)
+        return timesGroupedByVariant
+
+    def stopTimes(
+        self,
+        routes: Dict[RouteId, GTFSRoute],
+        routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
+        trips: Dict[TripId, GTFSTrip],
+    ) -> List[GTFSStopTime]:
+        busStopRouteIds = self._busStopRouteIds(routes, routeVariants)
         result = []
         for stopTimes in self.tczewTransportData.stopTimes(busStopRouteIds):
             for dayType, times in stopTimes.dayTypeToTimes.items():
-                tripSuffix = DAY_TYPE_TO_SERVICE[dayType]
-                for time in times:
-                    parsedTime = self.parseTimeTimezone(time.time)
-                    stopId = str(stopTimes.stopId)
-                    stopSequence = trips[str(time.tripId)].busStopIds.index(stopId)
-                    result.append(
-                        GTFSStopTime(
-                            tripId=f"{time.tripId}-{tripSuffix}",
-                            arrivalTime=parsedTime,
-                            departureTime=parsedTime,
-                            stopId=stopId,
-                            stopSequence=stopSequence,
+                timesGroupedByVariant = self._groupTimesByVariant(times)
+                for routeVariantId, timesGroup in timesGroupedByVariant.items():
+                    for index, time in enumerate(timesGroup):
+                        parsedTime = self.parseMinutesTimezone(time.minutes)
+                        stopId = str(stopTimes.stopId)
+                        stopSequence = routeVariants[
+                            str(time.routeVariantId)
+                        ].busStopIds.index(stopId)
+                        tripId = time.tripId
+                        result.append(
+                            GTFSStopTime(
+                                tripId=tripId,
+                                arrivalTime=parsedTime,
+                                departureTime=parsedTime,
+                                stopId=stopId,
+                                stopSequence=stopSequence,
+                            )
                         )
-                    )
         return result

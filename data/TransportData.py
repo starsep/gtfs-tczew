@@ -40,7 +40,8 @@ class Timetable:
 
 @dataclass
 class StopTime:
-    time: str
+    minutes: int
+    routeVariantId: str
     tripId: str
 
 
