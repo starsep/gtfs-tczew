@@ -39,12 +39,10 @@ class GTFSTczew(GTFSGenerator):
 
     def routesString(self) -> str:
         routesResult = StringIO()
-        routesResult.write("route_id,route_short_name,route_long_name,route_type\n")
+        routesResult.write("route_id,route_short_name,route_type\n")
         routeType = 3  # Bus. Used for short- and long-distance bus routes.
         for route in self.gtfsData.routes.values():
-            routesResult.write(
-                f"{route.routeId},{route.routeName},{route.routeName},{routeType}\n"
-            )
+            routesResult.write(f"{route.routeId},{route.routeName},{routeType}\n")
         return routesResult.getvalue()
 
     def tripsString(self) -> str:
@@ -110,10 +108,10 @@ class GTFSTczew(GTFSGenerator):
     def attributionsString(self) -> str:
         result = StringIO()
         result.write(
-            "organization_name,is_producer,is_operator,is_authority,attribution_url,agency_id\n"
+            "organization_name,is_producer,is_operator,is_authority,attribution_url\n"
         )
         result.write(
-            '"Data from Tczew public transport website",0,0,1,"http://rozklady.tczew.pl/\n'
+            '"Data from Tczew public transport website",0,0,1,"http://rozklady.tczew.pl/"\n'
         )
         result.write(
             '"Bus shapes based on data by: © OpenStreetMap contributors (ODbL license)"'
@@ -129,9 +127,11 @@ class GTFSTczew(GTFSGenerator):
 
     def stopTimesString(self) -> str:
         result = StringIO()
-        result.write("trip_id,arrival_time,departure_time,stop_id,stop_sequence\n")
+        result.write(
+            "trip_id,arrival_time,departure_time,stop_id,stop_sequence,timepoint\n"
+        )
         for stopTime in self.gtfsData.stopTimes:
             result.write(
-                f"{stopTime.tripId},{stopTime.arrivalTime},{stopTime.departureTime},{stopTime.stopId},{stopTime.stopSequence}\n"
+                f"{stopTime.tripId},{stopTime.arrivalTime},{stopTime.departureTime},{stopTime.stopId},{stopTime.stopSequence},1\n"
             )
         return result.getvalue()
