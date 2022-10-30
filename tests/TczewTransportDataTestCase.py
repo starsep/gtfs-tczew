@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from data.TczewTransportData import TczewTransportData
+from tczew.TczewTransportData import TczewTransportData
 
 
 class TczewTransportDataTestCase(TestCase):

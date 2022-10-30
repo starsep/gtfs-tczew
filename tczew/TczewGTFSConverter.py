@@ -1,7 +1,7 @@
 from typing import Dict, List, Tuple
 
 from configuration import feedVersion, startTimeUTC
-from data.GTFSConverter import (
+from gtfs.GTFSConverter import (
     GTFSConverter,
     GTFSRoute,
     GTFSRouteVariant,
@@ -16,7 +16,7 @@ from data.GTFSConverter import (
     TripId,
     shapesFromRouteVariants,
 )
-from data.TczewTransportData import TczewTransportData
+from tczew.TczewTransportData import TczewTransportData
 from data.TransportData import StopTime
 
 DAY_TYPE_TO_SERVICE = dict(PW="WD", SB="SA", ND="SU")

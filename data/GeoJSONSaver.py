@@ -2,7 +2,7 @@ import geojson
 from geojson import Feature, FeatureCollection, LineString
 
 from configuration import outputDir
-from data.GTFSConverter import GTFSData
+from gtfs.GTFSConverter import GTFSData
 
 
 class GeoJSONSaver:

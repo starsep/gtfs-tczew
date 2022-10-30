@@ -1,6 +1,6 @@
 from typing import Dict, List, Tuple
 
-from data.TczewApi import TczewBusesAPI
+from tczew.TczewApi import TczewBusesAPI
 from data.TransportData import (
     BusStop,
     LatLon,

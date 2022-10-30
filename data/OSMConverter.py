@@ -1,6 +1,6 @@
 from typing import Dict, List, cast
 
-from data.GTFSConverter import (
+from gtfs.GTFSConverter import (
     GTFSConverter,
     GTFSRoute,
     GTFSRouteVariant,

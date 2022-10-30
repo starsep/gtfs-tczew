@@ -6,9 +6,9 @@ from configuration import TIMEZONE, feedVersion
 from data.OSMConverter import OSMConverter
 from data.OSMOperatorMerger import OSMOperatorMerger
 from data.OSMOverpass import OSMOverpass
-from data.TczewGTFSConverter import TczewGTFSConverter
-from data.TczewTransportData import TczewTransportData
-from gtfs.gtfsGenerator import GTFSGenerator
+from tczew.TczewGTFSConverter import TczewGTFSConverter
+from tczew.TczewTransportData import TczewTransportData
+from gtfs.GTFSGenerator import GTFSGenerator
 from log import console
 
 

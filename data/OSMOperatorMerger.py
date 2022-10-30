@@ -4,7 +4,7 @@ from typing import Dict, List
 from pyproj import Geod
 from rich.table import Table
 
-from data.GTFSConverter import (
+from gtfs.GTFSConverter import (
     GTFSConverter,
     GTFSData,
     GTFSRoute,
