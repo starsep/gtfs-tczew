@@ -1,25 +1,23 @@
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
-from configuration import feedVersion, timezone, startTimeUTC
+from configuration import feedVersion, startTimeUTC
 from data.GTFSConverter import (
     GTFSConverter,
     GTFSRoute,
-    GTFSStop,
-    StopId,
-    RouteId,
-    GTFSTrip,
-    TripId,
-    GTFSShape,
-    shapesFromRouteVariants,
-    GTFSService,
-    GTFSStopTime,
-    RouteVariantId,
     GTFSRouteVariant,
-    ServiceId,
+    GTFSService,
+    GTFSShape,
+    GTFSStop,
+    GTFSStopTime,
+    GTFSTrip,
+    RouteId,
+    RouteVariantId,
+    StopId,
+    TripId,
+    shapesFromRouteVariants,
 )
 from data.TczewTransportData import TczewTransportData
 from data.TransportData import StopTime
-from log import console
 
 DAY_TYPE_TO_SERVICE = dict(PW="WD", SB="SA", ND="SU")
 
@@ -90,7 +88,9 @@ class TczewGTFSConverter(GTFSConverter):
                             )
         return result
 
-    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+    def shapes(
+        self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
+    ) -> List[GTFSShape]:
         return shapesFromRouteVariants(routeVariants)
 
     def services(self) -> List[GTFSService]:

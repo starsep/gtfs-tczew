@@ -1,26 +1,26 @@
 from itertools import zip_longest
-from typing import List, Dict
+from typing import Dict, List
 
 from pyproj import Geod
 from rich.table import Table
 
 from data.GTFSConverter import (
     GTFSConverter,
-    GTFSStop,
+    GTFSData,
     GTFSRoute,
+    GTFSRouteVariant,
+    GTFSService,
+    GTFSShape,
+    GTFSStop,
+    GTFSStopTime,
     GTFSTrip,
     RouteId,
-    TripId,
-    StopId,
-    GTFSShape,
-    shapesFromRouteVariants,
-    GTFSService,
-    GTFSData,
-    GTFSStopTime,
     RouteVariantId,
-    GTFSRouteVariant,
+    StopId,
+    TripId,
+    shapesFromRouteVariants,
 )
-from log import printWarning, printError, console
+from log import console, printError, printWarning
 
 STOP_DISTANCE_WARNING_THRESHOLD = 100.0
 STOP_DISTANCE_ERROR_THRESHOLD = 200.0
@@ -205,7 +205,9 @@ class OSMOperatorMerger(GTFSConverter):
     ) -> Dict[TripId, GTFSTrip]:
         return self.operatorData.trips
 
-    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+    def shapes(
+        self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
+    ) -> List[GTFSShape]:
         return shapesFromRouteVariants(routeVariants)
 
     def services(self) -> List[GTFSService]:

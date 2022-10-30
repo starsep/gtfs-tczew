@@ -1,15 +1,15 @@
-from typing import List, Dict, Tuple
+from typing import Dict, List, Tuple
 
 from data.TczewApi import TczewBusesAPI
 from data.TransportData import (
-    TransportData,
     BusStop,
+    LatLon,
     Route,
     RouteVariant,
-    Timetable,
-    LatLon,
-    StopTimes,
     StopTime,
+    StopTimes,
+    Timetable,
+    TransportData,
 )
 
 

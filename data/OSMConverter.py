@@ -2,22 +2,22 @@ from typing import Dict, List, cast
 
 from data.GTFSConverter import (
     GTFSConverter,
-    GTFSStop,
     GTFSRoute,
+    GTFSRouteVariant,
+    GTFSService,
+    GTFSShape,
+    GTFSStop,
+    GTFSStopTime,
     GTFSTrip,
     RouteId,
+    RouteVariantId,
     StopId,
     TripId,
-    GTFSShape,
     shapesFromRouteVariants,
-    GTFSService,
-    GTFSStopTime,
-    RouteVariantId,
-    GTFSRouteVariant,
 )
-from data.OSMSource import Relation, OSMSource, Way, Node
+from data.OSMSource import Node, OSMSource, Relation, Way
 from data.TransportData import LatLon
-from log import printWarning, printError
+from log import printError, printWarning
 
 GTFS_TRIP_ID_TAG = "gtfs:trip_id"
 GTFS_ROUTE_ID_TAG = "gtfs:route_id"
@@ -132,7 +132,9 @@ class OSMConverter(GTFSConverter):
     ) -> Dict[TripId, GTFSTrip]:
         return dict()
 
-    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+    def shapes(
+        self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
+    ) -> List[GTFSShape]:
         return shapesFromRouteVariants(routeVariants)
 
     def services(self) -> List[GTFSService]:

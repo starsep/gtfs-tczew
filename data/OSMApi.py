@@ -1,12 +1,7 @@
-from abc import ABC
-
 import httpx
 
-from configuration import (
-    OPENSTREETMAP_DOMAIN,
-    cache,
-)
-from data.OSMSource import Way, Relation, RelationMember, Node, OSMSource
+from configuration import OPENSTREETMAP_DOMAIN, cache
+from data.OSMSource import Node, OSMSource, Relation, RelationMember, Way
 
 OPENSTREETMAP_API = f"{OPENSTREETMAP_DOMAIN}/api/0.6"
 

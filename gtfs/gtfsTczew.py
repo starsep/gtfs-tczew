@@ -2,7 +2,7 @@ from io import StringIO
 
 from rich.table import Table
 
-from configuration import feedVersion, TIMEZONE
+from configuration import TIMEZONE, feedVersion
 from data.OSMConverter import OSMConverter
 from data.OSMOperatorMerger import OSMOperatorMerger
 from data.OSMOverpass import OSMOverpass

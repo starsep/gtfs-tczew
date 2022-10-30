@@ -13,4 +13,6 @@ class TczewTransportDataTestCase(TestCase):
             ("324", 204),
             ("712", 432),
         ]:
-            self.assertEqual(self.tczewTransportData.parseFirstMinutes(example), expected)
+            self.assertEqual(
+                self.tczewTransportData.parseFirstMinutes(example), expected
+            )

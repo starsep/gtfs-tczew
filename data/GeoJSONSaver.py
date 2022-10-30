@@ -1,5 +1,5 @@
 import geojson
-from geojson import FeatureCollection, Feature, LineString
+from geojson import Feature, FeatureCollection, LineString
 
 from configuration import outputDir
 from data.GTFSConverter import GTFSData

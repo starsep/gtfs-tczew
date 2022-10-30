@@ -1,12 +1,7 @@
-from abc import ABC
-
 import overpy
 
-from configuration import (
-    OVERPASS_URL,
-    cache,
-)
-from data.OSMSource import Way, Relation, RelationMember, Node, OSMSource
+from configuration import OVERPASS_URL, cache
+from data.OSMSource import Node, OSMSource, Relation, RelationMember, Way
 
 
 class OSMOverpass(OSMSource):

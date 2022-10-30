@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List, Dict, Tuple
+from typing import Dict, List
 
 from geojson import Point
 
@@ -119,7 +119,9 @@ class GTFSConverter(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def shapes(self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+    def shapes(
+        self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
+    ) -> List[GTFSShape]:
         raise NotImplementedError
 
     @abstractmethod
@@ -155,7 +157,9 @@ class GTFSConverter(ABC):
         )
 
 
-def shapesFromRouteVariants(routeVariants: Dict[RouteVariantId, GTFSRouteVariant]) -> List[GTFSShape]:
+def shapesFromRouteVariants(
+    routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
+) -> List[GTFSShape]:
     return [
         GTFSShape(
             shapeId=routeVariant.shapeId,
