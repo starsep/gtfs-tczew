@@ -1,5 +1,6 @@
 from typing import Dict, List, Tuple
 
+from gtfs.GTFSConverter import StopId
 from tczew.TczewApi import TczewBusesAPI
 from data.TransportData import (
     BusStop,
@@ -61,7 +62,7 @@ class TczewTransportData(TransportData):
         def parseCoords(coords: List[float]) -> List[LatLon]:
             result = []
             for i in range(len(coords) // 2):
-                result.append(LatLon(coords[2 * i], coords[2 * i + 1]))
+                result.append(LatLon(latitude=coords[2 * i + 1], longitude=coords[2 * i]))
             return result
 
         legsGeometry = dict()
@@ -93,7 +94,7 @@ class TczewTransportData(TransportData):
 
     @staticmethod
     def parseFirstMinutes(time: str) -> int:
-        return int(time[: len(time) - 2]) * 60 + int(time[-2:])
+        return int(time[:-2]) * 60 + int(time[-2:])
 
     def stopTimes(
         self, busStopIdRouteIds: List[Tuple[int, int]], timetableId: int = 0
@@ -130,3 +131,26 @@ class TczewTransportData(TransportData):
                 StopTimes(stopId=stopId, routeId=routeId, dayTypeToTimes=dayTypeToTimes)
             )
         return result
+
+    @staticmethod
+    def lastLegTimes() -> Dict[Tuple[StopId, StopId], int]:
+        return {
+            # Czyżykowska/Konarskiego -> Czyżykowo
+            ("10134", "10024"): 1,
+            # Jedności Narodu/Gdańska -> Dworzec
+            ("10143", "10003"): 2,
+            # Gdańska/Urząd Skarbowy -> Dworzec
+            ("10145", "10003"): 2,
+            # Jagiellońska/Wigury -> Plac Jana Pawła II
+            ("10164", "10170"): 1,
+            # Skarszewska/Molex -> Skarszewska/Gemalto
+            ("10182", "10213"): 1,
+            # Konarskiego -> Czyżykowo
+            ("10216", "10024"): 1,
+            # 1 Maja/MOPS -> Dworzec
+            ("12348", "10003"): 3,
+            # Stankiewicza/Tapflo -> Stankiewicza/Pętla
+            ("12351", "12353"): 1,
+            # Sobieskiego/Gdańska -> Dworzec
+            ("12354", "10003"): 1,
+        }

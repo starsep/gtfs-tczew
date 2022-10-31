@@ -14,6 +14,7 @@ ShapeId = str
 ServiceId = str
 GTFSDate = str  # YYYYMMDD
 Time = str  # HH:MM:SS
+StopSequence = int
 
 
 @dataclass
@@ -77,10 +78,11 @@ class GTFSService:
 @dataclass
 class GTFSStopTime:
     tripId: TripId
+    minutes: int
     arrivalTime: Time
     departureTime: Time
     stopId: StopId
-    stopSequence: int
+    stopSequence: StopSequence
 
 
 @dataclass

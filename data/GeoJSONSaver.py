@@ -23,8 +23,8 @@ class GeoJSONSaver:
     def _saveBusRoutesVariantsGeoJSON(operatorGTFSData: GTFSData):
         features = []
         for routeVariant in operatorGTFSData.routeVariants.values():
-            points = [(point.latitude, point.longitude) for point in routeVariant.shape]
-            stopNames = routeVariant.busStopNames(operatorGTFSData.stops)[-1]
+            points = [(point.longitude, point.latitude) for point in routeVariant.shape]
+            stopNames = routeVariant.busStopNames(operatorGTFSData.stops)
             properties = dict(
                 name=f"Bus {routeVariant.routeId}",
                 variantId=routeVariant.routeVariantId,

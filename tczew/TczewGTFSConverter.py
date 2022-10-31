@@ -1,4 +1,4 @@
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Set
 
 from configuration import feedVersion, startTimeUTC
 from gtfs.GTFSConverter import (
@@ -15,7 +15,9 @@ from gtfs.GTFSConverter import (
     StopId,
     TripId,
     shapesFromRouteVariants,
+    StopSequence,
 )
+from log import printError
 from tczew.TczewTransportData import TczewTransportData
 from data.TransportData import StopTime
 
@@ -174,6 +176,60 @@ class TczewGTFSConverter(GTFSConverter):
             timesGroupedByVariant[time.routeVariantId].append(time)
         return timesGroupedByVariant
 
+    @staticmethod
+    def _oneBeforeLastStopTimes(
+        stopTimes: List[GTFSStopTime], trips: Dict[TripId, GTFSTrip]
+    ) -> List[GTFSStopTime]:
+        lookingFor: Set[Tuple[StopId, TripId, StopSequence]] = set()
+        for trip in trips.values():
+            oneBeforeLast = trip.busStopIds[-2]
+            lookingFor.add((oneBeforeLast, trip.tripId, len(trip.busStopIds) - 2))
+        result = []
+        for stopTime in stopTimes:
+            key = (stopTime.stopId, stopTime.tripId, stopTime.stopSequence)
+            if key in lookingFor:
+                result.append(stopTime)
+        return result
+
+    def _addLastStopTimes(
+        self, stopTimes: List[GTFSStopTime], trips: Dict[TripId, GTFSTrip]
+    ) -> List[GTFSStopTime]:
+        lastLegTimes = self.tczewTransportData.lastLegTimes()
+        oneBeforeLastStopTimes = self._oneBeforeLastStopTimes(stopTimes, trips)
+        missing: Set[Tuple[StopId, StopId]] = set()
+        for trip in trips.values():
+            prev = trip.busStopIds[-2]
+            last = trip.busStopIds[-1]
+            key = (prev, last)
+            if key not in lastLegTimes:
+                missing.add(key)
+                continue
+            stopSequence = len(trip.busStopIds) - 1
+            prevStopTime = next(
+                filter(
+                    lambda stopTime: stopTime.stopId == prev
+                    and stopTime.tripId == trip.tripId
+                    and stopTime.stopSequence == stopSequence - 1,
+                    oneBeforeLastStopTimes,
+                )
+            )
+            prevMinutes = prevStopTime.minutes
+            lastLegMinutes = lastLegTimes[key]
+            parsedTime = self.parseMinutesTimezone(prevMinutes + lastLegMinutes)
+            stopTimes.append(
+                GTFSStopTime(
+                    tripId=trip.tripId,
+                    minutes=prevMinutes + lastLegMinutes,
+                    arrivalTime=parsedTime,
+                    departureTime=parsedTime,
+                    stopId=last,
+                    stopSequence=len(trip.busStopIds) - 1,
+                )
+            )
+        if len(missing) > 0:
+            printError(f"Missing last leg times for bus stops: {missing}")
+        return stopTimes
+
     def stopTimes(
         self,
         routes: Dict[RouteId, GTFSRoute],
@@ -196,10 +252,11 @@ class TczewGTFSConverter(GTFSConverter):
                         result.append(
                             GTFSStopTime(
                                 tripId=tripId,
+                                minutes=time.minutes,
                                 arrivalTime=parsedTime,
                                 departureTime=parsedTime,
                                 stopId=stopId,
                                 stopSequence=stopSequence,
                             )
                         )
-        return result
+        return self._addLastStopTimes(result, trips)

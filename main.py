@@ -1,5 +1,5 @@
 from data.GeoJSONSaver import GeoJSONSaver
-from tczew.GTFSTczew import GTFSTczew
+from tczew.TczewGTFSGenerator import GTFSTczew
 
 if __name__ == "__main__":
     gtfs = GTFSTczew()
