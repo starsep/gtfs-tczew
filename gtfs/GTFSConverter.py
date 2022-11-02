@@ -38,6 +38,7 @@ class GTFSRoute:
 class GTFSRouteVariant:
     routeId: RouteId
     routeVariantId: RouteVariantId
+    routeVariantName: str
     shape: List[LatLon]
     busStopIds: List[StopId]
     shapeId: ShapeId
@@ -107,7 +108,7 @@ class GTFSConverter(ABC):
 
     @abstractmethod
     def routeVariants(
-        self, stops: Dict[StopId, GTFSStop]
+        self, stops: Dict[StopId, GTFSStop], routes: Dict[RouteId, GTFSRoute]
     ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         raise NotImplementedError
 
@@ -142,7 +143,7 @@ class GTFSConverter(ABC):
     def data(self) -> GTFSData:
         stops = self.stops()
         routes = self.routes()
-        routeVariants = self.routeVariants(stops=stops)
+        routeVariants = self.routeVariants(stops=stops, routes=routes)
         services = self.services()
         trips = self.trips(stops=stops, services=services, routeVariants=routeVariants)
         shapes = self.shapes(routeVariants=routeVariants)

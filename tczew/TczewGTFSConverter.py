@@ -47,7 +47,7 @@ class TczewGTFSConverter(GTFSConverter):
         }
 
     def routeVariants(
-        self, stops: Dict[StopId, GTFSStop]
+        self, stops: Dict[StopId, GTFSStop], routes: Dict[RouteId, GTFSRoute]
     ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         return {
             str(variant.id): GTFSRouteVariant(
@@ -56,6 +56,7 @@ class TczewGTFSConverter(GTFSConverter):
                 shapeId=str(variant.id),
                 shape=variant.geometry,
                 busStopIds=list(map(str, variant.busStopsIds)),
+                routeVariantName=str(route.name),
             )
             for route in self.tczewRoutes
             for variant in route.variants
@@ -87,6 +88,7 @@ class TczewGTFSConverter(GTFSConverter):
                                 shapeId=routeVariant.shapeId,
                                 tripStartMinutes=tripStartTime,
                                 serviceId=serviceId,
+                                routeVariantName=routeVariant.routeVariantName,
                             )
         return result
 

@@ -20,7 +20,7 @@ from gtfs.GTFSConverter import (
     TripId,
     shapesFromRouteVariants,
 )
-from log import console, printError, printWarning
+from log import console, printError, printWarning, printInfo
 
 STOP_DISTANCE_WARNING_THRESHOLD = 100.0
 STOP_DISTANCE_ERROR_THRESHOLD = 200.0
@@ -108,8 +108,20 @@ class OSMOperatorMerger(GTFSConverter):
 
         allRefs = sorted(self.osmData.routes.keys() | self.operatorData.routes.keys())
         for ref in allRefs:
-            osmRoute = self.osmData.routes.get(ref)
             operatorRoute = self.operatorData.routes.get(ref)
+            osmRoute = self.osmData.routes.get(ref)
+            if osmRoute is None and operatorRoute is not None:
+                matchedRoutes = list(
+                    filter(
+                        lambda route: route.routeName == operatorRoute.routeName,
+                        self.osmData.routes.values(),
+                    )
+                )
+                if len(matchedRoutes) == 1:
+                    osmRoute = matchedRoutes[0]
+                    printInfo(
+                        f"Matched route by name (OSM ref): {osmRoute} vs {operatorRoute}"
+                    )
             osmRef = osmRoute.routeName if osmRoute is not None else None
             osmId = osmRoute.routeId if osmRoute is not None else None
             operatorName = (
@@ -123,7 +135,7 @@ class OSMOperatorMerger(GTFSConverter):
                 operatorId,
                 style="red" if osmRef != operatorName else None,
             )
-            if osmRef is None:
+            if osmRoute is None:
                 printError(f"Missing OSM route with ref={ref}")
         console.print(table)
 
@@ -181,7 +193,7 @@ class OSMOperatorMerger(GTFSConverter):
             )
 
     def routeVariants(
-        self, stops: Dict[StopId, GTFSStop]
+        self, stops: Dict[StopId, GTFSStop], routes: Dict[RouteId, GTFSRoute]
     ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         result = dict()
         for variantId, operatorVariant in self.operatorData.routeVariants.items():
@@ -190,11 +202,16 @@ class OSMOperatorMerger(GTFSConverter):
                 printError(
                     f"Missing variant {variantId} for route {operatorVariant.routeId} in OSM"
                 )
+                # TODO: match route variants by list of busStopIds
                 result[variantId] = operatorVariant
                 continue
             self._compareListOfBusStopsVariant(osmVariant, operatorVariant, stops)
-            # self._compareTrips(tripId, osmVariant, operatorTrip)
             result[variantId] = osmVariant
+        self._compareRouteVariants(
+            self.osmData.routeVariants,
+            self.operatorData.routeVariants,
+            stops,
+        )
         return result
 
     def trips(
@@ -221,65 +238,52 @@ class OSMOperatorMerger(GTFSConverter):
     ) -> List[GTFSStopTime]:
         return self.operatorData.stopTimes
 
-    # def _compareTrips(
-    #     self,
-    #     routeRef: str,
-    #     osmVariants: dict[str, Relation],
-    #     _operatorVariants: list[RouteVariant],
-    # ):
-    #     operatorVariants = {str(variant.id): variant for variant in _operatorVariants}
-    #     osmIds = set(osmVariants.keys())
-    #     operatorVariantIds = set(operatorVariants.keys())
-    #     if osmIds == operatorVariantIds:
-    #         return
-    #     table = Table(title=f"OSM route vs Operator Trip for Route {routeRef}")
-    #
-    #     table.add_column("ref OSM")
-    #     table.add_column("name OSM")
-    #     table.add_column("#OSM")
-    #     table.add_column("ref Op")
-    #     table.add_column("#Op")
-    #     table.add_column("start Operator")
-    #     table.add_column("end Operator")
-    #
-    #     commonIds = osmIds & operatorVariantIds
-    #     for variantId in sorted(osmIds | operatorVariantIds):
-    #         style = "red" if variantId not in commonIds else None
-    #         osmId = variantId if variantId in osmIds else None
-    #         osmVariant = osmVariants[osmId] if osmId is not None else None
-    #         osmName = osmVariant.tags["name"] if osmId is not None else None
-    #         osmBusStopsCount = (
-    #             str(
-    #                 len(
-    #                     [
-    #                         member.element
-    #                         for member in osmVariant.members
-    #                         if member.role.startswith("platform")
-    #                     ]
-    #                 )
-    #             )
-    #             if osmId is not None
-    #             else None
-    #         )
-    #         operatorId = variantId if variantId in operatorVariantIds else None
-    #         operatorVariant = (
-    #             operatorVariants[variantId] if variantId in operatorVariants else None
-    #         )
-    #         start = operatorVariant.firstStopName if operatorVariant else None
-    #         end = operatorVariant.lastStopName if operatorVariant else None
-    #         operatorBusStopsCount = (
-    #             str(len(operatorVariant.busStopsIds))
-    #             if operatorVariant is not None
-    #             else None
-    #         )
-    #         table.add_row(
-    #             osmId,
-    #             osmName,
-    #             osmBusStopsCount,
-    #             operatorId,
-    #             operatorBusStopsCount,
-    #             start,
-    #             end,
-    #             style=style,
-    #         )
-    #     console.print(table)
+    def _compareRouteVariants(
+        self,
+        osmVariants: Dict[RouteVariantId, GTFSRouteVariant],
+        operatorVariants: Dict[RouteVariantId, GTFSRouteVariant],
+        stops: Dict[StopId, GTFSStop],
+    ):
+        osmIds = set(osmVariants.keys())
+        operatorVariantIds = set(operatorVariants.keys())
+        if osmIds == operatorVariantIds:
+            return
+        table = Table(title=f"OSM route vs Operator Route Variants")
+
+        table.add_column("ref OSM")
+        table.add_column("name OSM")
+        table.add_column("#OSM")
+        table.add_column("ref Op")
+        table.add_column("#Op")
+        table.add_column("start Operator")
+        table.add_column("end Operator")
+
+        commonIds = osmIds & operatorVariantIds
+        for variantId in sorted(osmIds | operatorVariantIds):
+            style = "red" if variantId not in commonIds else None
+            osmId = variantId if variantId in osmIds else None
+            osmVariant = osmVariants[osmId] if osmId is not None else None
+            osmName = osmVariant.routeVariantName if osmId is not None else None
+            osmBusStopsCount = len(osmVariant.busStopIds) if osmId is not None else None
+            operatorId = variantId if variantId in operatorVariantIds else None
+            operatorVariant = (
+                operatorVariants[variantId] if variantId in operatorVariants else None
+            )
+            start = operatorVariant.busStopNames(stops)[0] if operatorVariant else None
+            end = operatorVariant.busStopNames(stops)[-1] if operatorVariant else None
+            operatorBusStopsCount = (
+                str(len(operatorVariant.busStopIds))
+                if operatorVariant is not None
+                else None
+            )
+            table.add_row(
+                osmId,
+                osmName,
+                str(osmBusStopsCount),
+                operatorId,
+                operatorBusStopsCount,
+                start,
+                end,
+                style=style,
+            )
+        console.print(table)

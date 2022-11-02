@@ -110,7 +110,7 @@ class OSMConverter(GTFSConverter):
         return result
 
     def routeVariants(
-        self, stops: Dict[StopId, GTFSStop]
+        self, stops: Dict[StopId, GTFSStop], routes: Dict[RouteId, GTFSRoute]
     ) -> Dict[RouteVariantId, GTFSRouteVariant]:
         result = dict()
         for osmRoute in self.routesOSM:
@@ -121,6 +121,7 @@ class OSMConverter(GTFSConverter):
                     shapeId=routeVariantId,
                     shape=self._extractRouteGeometry(route),
                     busStopIds=self._extractBusStopIds(route),
+                    routeVariantName=route.tags["name"],
                 )
         return result
 

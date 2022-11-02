@@ -62,7 +62,9 @@ class TczewTransportData(TransportData):
         def parseCoords(coords: List[float]) -> List[LatLon]:
             result = []
             for i in range(len(coords) // 2):
-                result.append(LatLon(latitude=coords[2 * i + 1], longitude=coords[2 * i]))
+                result.append(
+                    LatLon(latitude=coords[2 * i + 1], longitude=coords[2 * i])
+                )
             return result
 
         legsGeometry = dict()
