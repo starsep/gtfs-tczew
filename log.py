@@ -4,7 +4,7 @@ console = Console(stderr=True)
 
 
 def printInfo(message: str):
-    console.print(message, style="blue")
+    console.print(message)
 
 
 def printWarning(message: str):
