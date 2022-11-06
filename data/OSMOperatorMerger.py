@@ -35,6 +35,9 @@ class OSMOperatorMerger(GTFSConverter):
         self.operatorData = operatorData
         self.osmData = osmData
         self.wgs84Geod = Geod(ellps="WGS84")
+        self.matchedOperatorToOSMVariantIds: Dict[
+            RouteVariantId, RouteVariantId
+        ] = dict()
 
     @staticmethod
     def _validateStopOSM(stop):
@@ -202,7 +205,6 @@ class OSMOperatorMerger(GTFSConverter):
                 printWarning(
                     f"Missing variant {variantId} for route {operatorVariant.routeId} in OSM"
                 )
-                result[variantId] = operatorVariant
                 osmVariantByBusStopIds = list(
                     filter(
                         lambda osmRouteVariant: osmRouteVariant.busStopIds
@@ -214,16 +216,24 @@ class OSMOperatorMerger(GTFSConverter):
                     printError(
                         f"Multiple OSM variants with matching bus stops ids: {osmVariantByBusStopIds} vs {operatorVariant}"
                     )
+                    result[variantId] = operatorVariant
                     continue
                 if len(osmVariantByBusStopIds) == 1:
-                    printInfo(f"Matched OSM variant by bus stop ids: OSM {osmVariantByBusStopIds[0].routeVariantId} vs {operatorVariant.routeVariantId}")
+                    printInfo(
+                        f"Matched OSM variant by bus stop ids: OSM {osmVariantByBusStopIds[0].routeVariantId} vs {operatorVariant.routeVariantId}"
+                    )
                     osmVariant = osmVariantByBusStopIds[0]
-                    result[variantId] = osmVariant
+                    self.matchedOperatorToOSMVariantIds[
+                        variantId
+                    ] = osmVariant.routeVariantId
+                    result[osmVariant.routeVariantId] = osmVariant
                 if len(osmVariantByBusStopIds) == 0:
-                    printError(f"Couldn't match OSM variant by bus stop ids for {operatorVariant.routeVariantId}")
+                    printError(
+                        f"Couldn't match OSM variant by bus stop ids for {operatorVariant.routeVariantId}"
+                    )
+                    result[variantId] = operatorVariant
                     continue
             self._compareListOfBusStopsVariant(osmVariant, operatorVariant, stops)
-            result[variantId] = osmVariant
         self._compareRouteVariants(
             self.osmData.routeVariants,
             self.operatorData.routeVariants,
@@ -237,7 +247,22 @@ class OSMOperatorMerger(GTFSConverter):
         services: List[GTFSService],
         routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
     ) -> Dict[TripId, GTFSTrip]:
-        return self.operatorData.trips
+        return {
+            tripId: GTFSTrip(
+                tripId=tripId,
+                routeId=trip.routeId,
+                routeVariantId=trip.routeVariantId,
+                shape=trip.shape,
+                busStopIds=trip.busStopIds,
+                shapeId=self.matchedOperatorToOSMVariantIds.get(
+                    trip.routeVariantId, trip.shapeId
+                ),
+                tripStartMinutes=trip.tripStartMinutes,
+                serviceId=trip.serviceId,
+                routeVariantName=trip.routeVariantName,
+            )
+            for tripId, trip in self.operatorData.trips.items()
+        }
 
     def shapes(
         self, routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
@@ -277,11 +302,15 @@ class OSMOperatorMerger(GTFSConverter):
 
         commonIds = osmIds & operatorVariantIds
         for variantId in sorted(osmIds | operatorVariantIds):
-            style = "red" if variantId not in commonIds else None
+            if variantId in self.matchedOperatorToOSMVariantIds.values():
+                continue
             osmId = variantId if variantId in osmIds else None
+            osmId = self.matchedOperatorToOSMVariantIds[variantId] if variantId in self.matchedOperatorToOSMVariantIds else osmId
             osmVariant = osmVariants[osmId] if osmId is not None else None
-            osmName = osmVariant.routeVariantName if osmId is not None else None
-            osmBusStopsCount = str(len(osmVariant.busStopIds)) if osmId is not None else None
+            osmName = osmVariant.routeVariantName if osmVariant is not None else None
+            osmBusStopsCount = (
+                str(len(osmVariant.busStopIds)) if osmVariant is not None else None
+            )
             operatorId = variantId if variantId in operatorVariantIds else None
             operatorVariant = (
                 operatorVariants[variantId] if variantId in operatorVariants else None
@@ -293,6 +322,7 @@ class OSMOperatorMerger(GTFSConverter):
                 if operatorVariant is not None
                 else None
             )
+            style = "red" if operatorId is None or osmId is None else None
             table.add_row(
                 osmId,
                 osmName,
