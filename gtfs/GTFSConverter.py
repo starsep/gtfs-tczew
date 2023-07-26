@@ -5,6 +5,7 @@ from typing import Dict, List
 from geojson import Point
 
 from data.TransportData import LatLon
+from distance import GeoPoint
 
 StopId = str
 RouteId = str
@@ -26,6 +27,9 @@ class GTFSStop:
 
     def toPoint(self):
         return Point((self.stopLon, self.stopLat))
+
+    def toGeoPoint(self):
+        return GeoPoint(lat=self.stopLat, lon=self.stopLon)
 
 
 @dataclass

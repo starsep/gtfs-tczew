@@ -1,8 +1,9 @@
 from itertools import zip_longest
 from typing import Dict, List
 
-from pyproj import Geod
 from rich.table import Table
+
+from distance import distance
 
 from gtfs.GTFSConverter import (
     GTFSConverter,
@@ -34,7 +35,6 @@ class OSMOperatorMerger(GTFSConverter):
     ):
         self.operatorData = operatorData
         self.osmData = osmData
-        self.wgs84Geod = Geod(ellps="WGS84")
         self.matchedOperatorToOSMVariantIds: Dict[
             RouteVariantId, RouteVariantId
         ] = dict()
@@ -47,14 +47,7 @@ class OSMOperatorMerger(GTFSConverter):
             printWarning(f"{stop} missing public_transport tag")
 
     def _validateStopsDistance(self, stopOperator: GTFSStop, stopOsm: GTFSStop):
-        stopsDistance = int(
-            self.wgs84Geod.inv(
-                stopOperator.stopLon,
-                stopOperator.stopLat,
-                stopOsm.stopLon,
-                stopOsm.stopLat,
-            )[2]
-        )
+        stopsDistance = distance(stopOperator.toGeoPoint(), stopOsm.toGeoPoint())
         message = f"Distance between stops={stopsDistance}m. {stopOsm} {stopOperator}"
         if stopsDistance > STOP_DISTANCE_ERROR_THRESHOLD:
             printError(message)

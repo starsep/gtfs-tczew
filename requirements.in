@@ -1,7 +1,7 @@
 diskcache
 geojson
-gtfs_kit
 httpx
 overpy
+pytz
 rich
 tqdm
