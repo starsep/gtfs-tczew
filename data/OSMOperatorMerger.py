@@ -3,7 +3,7 @@ from typing import Dict, List
 
 from rich.table import Table
 
-from distance import distance
+from starsep_utils import haversine
 
 from gtfs.GTFSConverter import (
     GTFSConverter,
@@ -47,7 +47,7 @@ class OSMOperatorMerger(GTFSConverter):
             printWarning(f"{stop} missing public_transport tag")
 
     def _validateStopsDistance(self, stopOperator: GTFSStop, stopOsm: GTFSStop):
-        stopsDistance = distance(stopOperator.toGeoPoint(), stopOsm.toGeoPoint())
+        stopsDistance = haversine(stopOperator.toGeoPoint(), stopOsm.toGeoPoint())
         message = f"Distance between stops={stopsDistance}m. {stopOsm} {stopOperator}"
         if stopsDistance > STOP_DISTANCE_ERROR_THRESHOLD:
             printError(message)

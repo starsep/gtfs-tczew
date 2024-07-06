@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from data.GeoJSONSaver import GeoJSONSaver
 from tczew.TczewGTFSGenerator import GTFSTczew
 

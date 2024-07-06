@@ -115,13 +115,16 @@ class OSMConverter(GTFSConverter):
         result = dict()
         for osmRoute in self.routesOSM:
             for routeVariantId, route in self._validateOSMVariants(osmRoute).items():
+                routeName = route.tags.get("name", "")
+                if routeName == "":
+                    printError(f"Missing name tag for relation {route.id}")
                 result[routeVariantId] = GTFSRouteVariant(
                     routeId=route.tags[GTFS_ROUTE_ID_TAG],
                     routeVariantId=routeVariantId,
                     shapeId=routeVariantId,
                     shape=self._extractRouteGeometry(route),
                     busStopIds=self._extractBusStopIds(route),
-                    routeVariantName=route.tags["name"],
+                    routeVariantName=routeName,
                 )
         return result
 

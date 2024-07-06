@@ -5,7 +5,7 @@ from typing import Dict, List
 from geojson import Point
 
 from data.TransportData import LatLon
-from distance import GeoPoint
+from starsep_utils import GeoPoint
 
 StopId = str
 RouteId = str
