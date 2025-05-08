@@ -5,3 +5,5 @@ output
 __pycache__
 .dockerignore
 .gitignore
+venv
+.venv
