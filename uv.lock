@@ -46,11 +46,14 @@ wheels = [
 
 [[package]]
 name = "exceptiongroup"
-version = "1.2.2"
+version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/09/35/2495c4ac46b980e4ca1f6ad6db102322ef3ad2410b79fdde159a4b0f3b92/exceptiongroup-1.2.2.tar.gz", hash = "sha256:47c2edf7c6738fafb49fd34290706d1a1a2f4d1c6df275526b62cbb4aa5393cc", size = 28883 }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/0b/9f/a65090624ecf468cdca03533906e7c69ed7588582240cfe7cc9e770b50eb/exceptiongroup-1.3.0.tar.gz", hash = "sha256:b241f5885f560bc56a59ee63ca4c6a8bfa46ae4ad651af316d4e81817bb9fd88", size = 29749 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/02/cc/b7e31358aac6ed1ef2bb790a9746ac2c69bcb3c8588b41616914eb106eaf/exceptiongroup-1.2.2-py3-none-any.whl", hash = "sha256:3111b9d131c238bec2f8f516e123e14ba243563fb135d3fe885990585aa7795b", size = 16453 },
+    { url = "https://files.pythonhosted.org/packages/36/f4/c6e662dade71f56cd2f3735141b265c3c79293c109549c1e6933b0651ffc/exceptiongroup-1.3.0-py3-none-any.whl", hash = "sha256:4d111e6e0c13d0644cad6ddaa7ed0261a0b36971f6d23e7ec9b4b9097da78a10", size = 16674 },
 ]
 
 [[package]]
@@ -217,15 +220,15 @@ wheels = [
 
 [[package]]
 name = "starsep-utils"
-version = "0.9.0"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "funcy" },
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/e2/46d5d921a00244148d7ee9b9bf61437d69eced6197899cc6067c66dba94e/starsep_utils-0.9.0.tar.gz", hash = "sha256:9b693a8295980e441d62a8dd2c7bd02606b7de2e404e93d986298cd4e3a8848b", size = 16830 }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/66/d4d57e586f71665e59f2e90f374230f4ee1ce2b78ff65e5f2c9c9082e83b/starsep_utils-0.9.1.tar.gz", hash = "sha256:735980365b6a4249d3459fd767b8ad47438812d784cfb22a4e950ba4177209ea", size = 16840 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/59/7fcbf17449177951950af05f6255de845904d8bec51c225f1971ce4db406/starsep_utils-0.9.0-py3-none-any.whl", hash = "sha256:72cb8db9c46b367b5d099b0163deccb49483e153b32ffad966dc2db602eb23cd", size = 20446 },
+    { url = "https://files.pythonhosted.org/packages/7e/0f/bbd919e686e381ad61c0ff32c7f2eb63e06fd83a4fc2f0a728ca699f1dcf/starsep_utils-0.9.1-py3-none-any.whl", hash = "sha256:bc145d3fdf136a859ee5333991e4c5d2d3975265f9056efd0f95d6f32ac63593", size = 20441 },
 ]
 
 [[package]]

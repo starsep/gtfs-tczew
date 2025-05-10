@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from data.GeoJSONSaver import GeoJSONSaver
 from tczew.TczewGTFSGenerator import GTFSTczew
-from starsep_utils.healthchecks import healthchecks
+from starsep_utils import healthchecks
 
 
 if __name__ == "__main__":
