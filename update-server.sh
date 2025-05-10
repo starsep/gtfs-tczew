@@ -2,7 +2,7 @@
 set -eu
 date=$(/bin/date '+%Y%m%d')
 git clone https://$GITHUB_USERNAME:$GITHUB_TOKEN@github.com/starsep/gtfs --depth 1 --branch main output
-uv run python main.py
+uv run --no-dev --no-progress python main.py
 (
     cd output || exit 1
     git config user.name "GitHub Actions Bot"
