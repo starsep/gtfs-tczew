@@ -217,15 +217,15 @@ wheels = [
 
 [[package]]
 name = "starsep-utils"
-version = "0.8.0"
+version = "0.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "funcy" },
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/c0/e924f2d9d0eedd7ecb3718ec9fb8948396601e2f870467de150fafab051e/starsep_utils-0.8.0.tar.gz", hash = "sha256:416c4b27135e82ce0e2beb66392e2a8ecc0b0f6b1d855e73f26f4e68004e91ef", size = 16648 }
+sdist = { url = "https://files.pythonhosted.org/packages/c6/e2/46d5d921a00244148d7ee9b9bf61437d69eced6197899cc6067c66dba94e/starsep_utils-0.9.0.tar.gz", hash = "sha256:9b693a8295980e441d62a8dd2c7bd02606b7de2e404e93d986298cd4e3a8848b", size = 16830 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c9/2e/2dffb1fc0eb0d39cf8140f9e0ccc12cd19ac69cb4a5a9b7fe1dacc2f0c2d/starsep_utils-0.8.0-py3-none-any.whl", hash = "sha256:4b35e351464332e7eaaca8517b727eb412ea4eef9bff063605ab2d6dd30dd55f", size = 19804 },
+    { url = "https://files.pythonhosted.org/packages/01/59/7fcbf17449177951950af05f6255de845904d8bec51c225f1971ce4db406/starsep_utils-0.9.0-py3-none-any.whl", hash = "sha256:72cb8db9c46b367b5d099b0163deccb49483e153b32ffad966dc2db602eb23cd", size = 20446 },
 ]
 
 [[package]]
