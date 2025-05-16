@@ -137,7 +137,7 @@ class TczewGTFSConverter(GTFSConverter):
         return [
             serviceWorkDay,
             serviceSaturday,
-            serviceSunday
+            serviceSunday,
             # for index, timetable in enumerate(self.tczewTransportData.getTimetableInformation())
             # TODO: handle multiple timetables
         ]

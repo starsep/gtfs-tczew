@@ -35,9 +35,9 @@ class OSMOperatorMerger(GTFSConverter):
     ):
         self.operatorData = operatorData
         self.osmData = osmData
-        self.matchedOperatorToOSMVariantIds: Dict[
-            RouteVariantId, RouteVariantId
-        ] = dict()
+        self.matchedOperatorToOSMVariantIds: Dict[RouteVariantId, RouteVariantId] = (
+            dict()
+        )
 
     @staticmethod
     def _validateStopOSM(stop):
@@ -154,7 +154,7 @@ class OSMOperatorMerger(GTFSConverter):
         table.add_column("ref Operator")
         table.add_column("name Operator")
 
-        for ((refOSM, nameOSM), (refOperator, nameOperator)) in zip_longest(
+        for (refOSM, nameOSM), (refOperator, nameOperator) in zip_longest(
             zip(osmBusStopIds, osmBusStopNames),
             zip(operatorBusStopsIds, operatorBusStopNames),
             fillvalue=("", ""),
@@ -216,9 +216,9 @@ class OSMOperatorMerger(GTFSConverter):
                         f"Matched OSM variant by bus stop ids: OSM {osmVariantByBusStopIds[0].routeVariantId} vs {operatorVariant.routeVariantId}"
                     )
                     osmVariant = osmVariantByBusStopIds[0]
-                    self.matchedOperatorToOSMVariantIds[
-                        variantId
-                    ] = osmVariant.routeVariantId
+                    self.matchedOperatorToOSMVariantIds[variantId] = (
+                        osmVariant.routeVariantId
+                    )
                     result[osmVariant.routeVariantId] = osmVariant
                 if len(osmVariantByBusStopIds) == 0:
                     printError(
@@ -298,7 +298,11 @@ class OSMOperatorMerger(GTFSConverter):
             if variantId in self.matchedOperatorToOSMVariantIds.values():
                 continue
             osmId = variantId if variantId in osmIds else None
-            osmId = self.matchedOperatorToOSMVariantIds[variantId] if variantId in self.matchedOperatorToOSMVariantIds else osmId
+            osmId = (
+                self.matchedOperatorToOSMVariantIds[variantId]
+                if variantId in self.matchedOperatorToOSMVariantIds
+                else osmId
+            )
             osmVariant = osmVariants[osmId] if osmId is not None else None
             osmName = osmVariant.routeVariantName if osmVariant is not None else None
             osmBusStopsCount = (

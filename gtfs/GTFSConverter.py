@@ -165,7 +165,7 @@ class GTFSConverter(ABC):
 
 
 def shapesFromRouteVariants(
-    routeVariants: Dict[RouteVariantId, GTFSRouteVariant]
+    routeVariants: Dict[RouteVariantId, GTFSRouteVariant],
 ) -> List[GTFSShape]:
     return [
         GTFSShape(

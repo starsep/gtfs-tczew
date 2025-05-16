@@ -78,8 +78,7 @@ class OSMSource(ABC):
         result = list()
         stopRefs = set()
         if element.tags.get("highway") == "bus_stop":
-            if "ref" in element.tags:
-                ref = element.tags["ref"]
+            if ref := element.tags.get("ref") is not None:
                 if ref not in stopRefs:
                     result.append(element)
                     stopRefs.add(ref)
@@ -90,10 +89,12 @@ class OSMSource(ABC):
             for member in element.members:
                 memberStops = self._getStops(member.element)
                 for memberStop in memberStops:
-                    ref = memberStop.tags["ref"]
-                    if ref not in stopRefs:
-                        result.append(memberStop)
-                        stopRefs.add(ref)
+                    if ref := memberStop.tags.get("ref") is not None:
+                        if ref not in stopRefs:
+                            result.append(memberStop)
+                            stopRefs.add(ref)
+                    else:
+                        printWarning(f"Missing ref for {element}")
         return result
 
     def getStops(self) -> Dict[str, Node]:

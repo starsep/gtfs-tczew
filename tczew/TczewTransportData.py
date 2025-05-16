@@ -102,7 +102,7 @@ class TczewTransportData(TransportData):
         self, busStopIdRouteIds: List[Tuple[int, int]], timetableId: int = 0
     ) -> List[StopTimes]:
         result = []
-        for (stopId, routeId) in busStopIdRouteIds:
+        for stopId, routeId in busStopIdRouteIds:
             timetable = self.tczewBusesApi.getBusStopTimeTable(
                 timetableId=timetableId, busStopId=stopId, routeId=routeId
             )

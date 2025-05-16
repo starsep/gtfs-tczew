@@ -8,7 +8,7 @@ class TczewTransportDataTestCase(TestCase):
         self.tczewTransportData = TczewTransportData()
 
     def test_parseTime(self):
-        for (example, expected) in [
+        for example, expected in [
             ("000", 0),
             ("324", 204),
             ("712", 432),
