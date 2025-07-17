@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run python
 from data.GeoJSONSaver import GeoJSONSaver
 from tczew.TczewGTFSGenerator import GTFSTczew
 from starsep_utils import healthchecks
